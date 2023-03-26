@@ -1,0 +1,62 @@
+==========================================
+==========       config      =============
+==========================================
+gpu_id:0
+s:0
+t:2
+output:san
+output_tar:ckps/target/
+seed:2021
+max_epoch:1
+batch_size:2
+worker:4
+bottleneck_dim:256
+net:resnet50
+dset:office
+lr:0.01
+alpha:0.75
+lambda_u:100
+T:0.5
+da:uda
+cls_par:0.3
+threshold:0
+ssl:0.6
+ps:0.0
+choice:ent
+layer:wn
+classifier:bn
+bottleneck:256
+gent:True
+model:target
+issave:False
+class_num:31
+t_dset_path:../data/office/webcam_list.txt
+test_dset_path:../data/office/webcam_list.txt
+name:AW
+output_dir:ckps/target/uda\office\AW
+savename:par_0.3_ssl_0.6
+log:ps_0.0_par_0.3_ssl_0.6
+mm_dir:san\uda\office\AW
+out_file:<_io.TextIOWrapper name='san\\uda\\office\\AW\\ps_0.0_par_0.3_ssl_0.6_ent.txt' mode='w' encoding='cp1252'>
+
+==========================================
+
+Task: AW, Iter:0/0; Accuracy = 92.70%; Mean Ent = 0.0969
+Task: 0.67
+Task: AW, Iter:26/260; Accuracy = 7.55%; Mean Ent = 2.4003
+Task: AW, Iter:52/260; Accuracy = 1.76%; Mean Ent = 2.8620
+Task: AW, Iter:78/260; Accuracy = 3.77%; Mean Ent = 2.7911
+Task: AW, Iter:104/260; Accuracy = 8.93%; Mean Ent = 3.0018
+Task: AW, Iter:130/260; Accuracy = 7.17%; Mean Ent = 2.9151
+Task: AW, Iter:156/260; Accuracy = 4.28%; Mean Ent = 2.7754
+Task: AW, Iter:182/260; Accuracy = 2.39%; Mean Ent = 3.1301
+Task: AW, Iter:208/260; Accuracy = 6.92%; Mean Ent = 3.2304
+Task: AW, Iter:234/260; Accuracy = 5.79%; Mean Ent = 3.2355
+Task: AW, Iter:260/260; Accuracy = 4.91%; Mean Ent = 3.2689
+
+==========================================
+
+Val Acc = 7.55
+Max Acc = 8.93
+Fin Acc = 4.91
+

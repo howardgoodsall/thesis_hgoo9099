@@ -1,0 +1,43 @@
+image_mixmatch.py --gpu_id 0 --seed 2021 --da uda --dset office_0.75 --max_epoch 1 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --choice ent --ps 0.0 --batch_size 2==========================================
+==========       config      =============
+==========================================
+gpu_id:0
+s:0
+t:1
+output:san
+output_tar:ckps/target/
+seed:2021
+max_epoch:1
+batch_size:2
+worker:4
+bottleneck_dim:256
+net:resnet50
+dset:office_0.75
+lr:0.01
+alpha:0.75
+lambda_u:100
+T:0.5
+da:uda
+cls_par:0.3
+threshold:0
+ssl:0.6
+ps:0.0
+choice:ent
+layer:wn
+classifier:bn
+bottleneck:256
+gent:True
+model:target
+issave:False
+class_num:31
+t_dset_path:../data/office_0.75/dslr_list.txt
+test_dset_path:../data/office_0.75/dslr_list.txt
+name:AD
+output_dir:ckps/target/uda\office_0.75\AD
+savename:par_0.3_ssl_0.6
+log:ps_0.0_par_0.3_ssl_0.6
+mm_dir:san\uda\office_0.75\AD
+out_file:<_io.TextIOWrapper name='san\\uda\\office_0.75\\AD\\ps_0.0_par_0.3_ssl_0.6_ent.txt' mode='w' encoding='cp1252'>
+
+==========================================
+

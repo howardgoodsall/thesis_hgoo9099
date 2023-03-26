@@ -1,0 +1,62 @@
+image_boost.py --gpu_id 0 --seed 2021 --da uda --dset office_0.5 --max_epoch 15 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --choice ent --ps 0.0 --batch_size 5 --lr=1e-2==========================================
+==========       config      =============
+==========================================
+gpu_id:0
+s:0
+t:2
+output:san
+output_tar:ckps/target/
+seed:2021
+max_epoch:15
+batch_size:5
+worker:4
+bottleneck_dim:256
+net:resnet50
+dset:office_0.5
+lr:0.01
+alpha:0.75
+lambda_u:100
+T:0.5
+da:uda
+cls_par:0.3
+threshold:0
+ssl:0.6
+ps:0.0
+choice:ent
+layer:wn
+classifier:bn
+bottleneck:256
+gent:True
+model:target
+issave:False
+class_num:31
+t_dset_path:../data/office_0.5/webcam_list.txt
+test_dset_path:../data/office_0.5/webcam_list.txt
+name:AW
+output_dir:ckps/target/uda\office_0.5\AW
+savename:par_0.3_ssl_0.6
+log:ps_0.0_par_0.3_ssl_0.6
+mm_dir:san\uda\office_0.5\AW
+out_file:<_io.TextIOWrapper name='san\\uda\\office_0.5\\AW\\office_boost_log_par_0.3_ssl_0.6.txt' mode='w' encoding='cp1252'>
+
+==========================================
+
+Task: AW, Iter:0/0; Accuracy = 91.79%; Mean Ent = 0.1179
+Task: 0.66
+Task: AW, Iter:72/720; Accuracy = 87.95%; Mean Ent = 0.6719
+Task: AW, Iter:144/720; Accuracy = 91.28%; Mean Ent = 0.3689
+Task: AW, Iter:216/720; Accuracy = 91.54%; Mean Ent = 0.3215
+Task: AW, Iter:288/720; Accuracy = 91.79%; Mean Ent = 0.2699
+Task: AW, Iter:360/720; Accuracy = 92.05%; Mean Ent = 0.2085
+Task: AW, Iter:432/720; Accuracy = 91.28%; Mean Ent = 0.2043
+Task: AW, Iter:504/720; Accuracy = 91.28%; Mean Ent = 0.2154
+Task: AW, Iter:576/720; Accuracy = 91.79%; Mean Ent = 0.2218
+Task: AW, Iter:648/720; Accuracy = 91.28%; Mean Ent = 0.1963
+Task: AW, Iter:720/720; Accuracy = 91.28%; Mean Ent = 0.1957
+
+==========================================
+
+Val Acc = 91.28
+Max Acc = 92.05
+Fin Acc = 91.28
+
