@@ -82,17 +82,6 @@ def split_target(args):
     acc = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(all_label.size()[0]) * 100
     mean_ent = loss.Entropy(nn.Softmax(dim=1)(all_output))#Mean Entropy Calculation
 
-    if args.dset == 'VISDA-C':
-        matrix = confusion_matrix(all_label, torch.squeeze(predict).float())
-        matrix = matrix[np.unique(all_label).astype(int),:]
-        all_acc = matrix.diagonal()/matrix.sum(axis=1) * 100
-        acc = all_acc.mean()
-        aa = [str(np.round(i, 2)) for i in all_acc]
-        acc_list = ' '.join(aa)
-        print(acc_list)
-        args.out_file.write(acc_list + '\n')
-        args.out_file.flush()
-
     log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}'.format(args.name, 0, 0, acc, mean_ent.mean())
     args.out_file.write(log_str + '\n')
     args.out_file.flush()
@@ -350,20 +339,9 @@ def train(args, txt_src, txt_tgt):
 
         if iter_num % interval_iter == 0 or iter_num == max_iter:
             base_network.eval()
-            if args.dset == 'VISDA-C':
-                acc, py, score, y, tacc = cal_acc(dset_loaders["test"], base_network, flag=True)
-                print(tacc)
-                args.out_file.write(tacc + '\n')
-                args.out_file.flush()
-                _ent = Entropy(score)
-                mean_ent = 0
-                for ci in range(args.class_num):
-                    if _ent[py==ci].size(0) > 0:
-                        mean_ent += _ent[py==ci].mean()
-                mean_ent /= args.class_num
-            else:
-                acc, py, score, y = cal_acc(dset_loaders["test"], base_network, flag=False)
-                mean_ent = torch.mean(Entropy(score))
+            
+            acc, py, score, y = cal_acc(dset_loaders["test"], base_network, flag=False)
+            mean_ent = torch.mean(Entropy(score))
             
             list_acc.append(acc)
 
@@ -399,12 +377,12 @@ if __name__ == "__main__":
     parser.add_argument('--output_tar', type=str, default='ckps')
     parser.add_argument('--seed', type=int, default=2020, help="random seed")
     parser.add_argument('--max_epoch', type=int, default=50)
-    parser.add_argument('--batch_size', type=int, default=36, help="batch_size")
+    parser.add_argument('--batch_size', type=int, default=5, help="batch_size")
     parser.add_argument('--worker', type=int, default=4, help="number of workers")
     parser.add_argument('--bottleneck_dim', type=int, default=256)
 
     parser.add_argument('--net', type=str, default='resnet50', choices=["resnet18", "resnet50", "resnet101", "resnet34", "vgg16"])
-    parser.add_argument('--dset', type=str, default='office-home', help="The dataset or source dataset used")#choices=['VISDA-C', 'office', 'office-home']
+    parser.add_argument('--dset', type=str, default='office-home', help="The dataset or source dataset used")#choices=['office', 'office-home']
     parser.add_argument('--lr', type=float, default=1e-2, help="learning rate")
 
 

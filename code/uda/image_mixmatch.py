@@ -396,7 +396,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_tar', type=str, default='ckps')
     parser.add_argument('--seed', type=int, default=2020, help="random seed")
     parser.add_argument('--max_epoch', type=int, default=50)
-    parser.add_argument('--batch_size', type=int, default=36, help="batch_size")
+    parser.add_argument('--batch_size', type=int, default=5, help="batch_size")
     parser.add_argument('--worker', type=int, default=4, help="number of workers")
     parser.add_argument('--bottleneck_dim', type=int, default=256)
 
