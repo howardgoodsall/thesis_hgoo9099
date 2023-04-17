@@ -285,6 +285,7 @@ def train_target(args):
             mem_label = torch.from_numpy(mem_label).cuda()
             netF.train()
             netB.train()
+            #Only trains the Base Network & Feature extractor (not the final classifier)
 
         inputs_test = inputs_test.cuda()
 

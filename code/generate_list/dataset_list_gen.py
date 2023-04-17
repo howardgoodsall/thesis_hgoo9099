@@ -14,7 +14,7 @@ if(scale_factor >1 or scale_factor<0):
 	print("usage: python3 dataset_list_gen.py <scale factor between 0 and 1 - e.g. 0.5>")
 	sys.exit(0)
 
-folder = r"C:\Users\Howard\Desktop\Honours\Thesis_Project_hgoo9099\code\datasets\office"
+folder = r"C:\Users\Howard\Desktop\Honours\thesis_hgoo9099\code\datasets\OfficeHome"
 if('/' in folder):
 	dataset_name = folder.split("/")[-1]
 elif('\\' in folder):

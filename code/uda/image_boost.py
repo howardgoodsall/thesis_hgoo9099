@@ -228,8 +228,8 @@ def train(args, txt_src, txt_tgt):
     max_iter = args.max_epoch*max_len
     interval_iter = max_iter // 10
 
-    #Fully Connected Layer
-    fc_layer1 = network.feat_classifier(type='wn', class_num = netG.in_features, bottleneck_dim=2048).cuda()
+    #New Fully Connected Layer
+    fc_layer1 = network.feat_classifier(type='wn', class_num = netG.in_features, bottleneck_dim=2048, type='wn').cuda()
 
     netB = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=args.bottleneck).cuda()
     netC = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()
@@ -248,11 +248,15 @@ def train(args, txt_src, txt_tgt):
     if len(args.gpu_id.split(',')) > 1:
         netG = nn.DataParallel(netG)
 
-    netF = nn.Sequential(fc_layer1, netB, netC)
+
+    #Copy weights from old feature extractor to new fc layer
+    fc_layer1
+
+    netF = nn.Sequential(fc_layer1, netB, netC)#This is the new FC layer + old feature extractor + old classifier
     optimizer_g = optim.SGD(netG.parameters(), lr = args.lr * 0.1)#Optimisers set here
     optimizer_f = optim.SGD(netF.parameters(), lr = args.lr)
 
-    base_network = nn.Sequential(netG, netF)
+    whole_network = nn.Sequential(netG, netF)#This combines the base network and the added layers
     source_loader_iter = iter(dset_loaders["source"])
     target_loader_iter = iter(dset_loaders["target"])
 
@@ -260,7 +264,7 @@ def train(args, txt_src, txt_tgt):
     best_ent = 100
 
     for iter_num in range(1, max_iter + 1):
-        base_network.train()
+        whole_network.train()
         lr_scheduler(optimizer_g, init_lr=args.lr * 0.1, iter_num=iter_num, max_iter=max_iter)
         lr_scheduler(optimizer_f, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
 
@@ -283,8 +287,8 @@ def train(args, txt_src, txt_tgt):
 
         with torch.no_grad():
             # compute guessed labels of unlabel samples
-            outputs_u = base_network(inputs_t)
-            outputs_u2 = base_network(inputs_t2)
+            outputs_u = whole_network(inputs_t)
+            outputs_u2 = whole_network(inputs_t2)
             p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
             pt = p**(1/args.T)
             targets_u = pt / pt.sum(dim=1, keepdim=True)
@@ -313,10 +317,10 @@ def train(args, txt_src, txt_tgt):
         # t2 = [t2a, t2b, t2c]
         # => s' = [sa, t1b, t2c]   t1' = [t1a, sb, t1c]   t2' = [t2a, t2b, sc]
 
-        logits = base_network(mixed_input[0])
+        logits = whole_network(mixed_input[0])
         logits = [logits]
         for input in mixed_input[1:]:
-            temp = base_network(input)
+            temp = whole_network(input)
             logits.append(temp)
 
         # put interleaved samples back
@@ -338,9 +342,9 @@ def train(args, txt_src, txt_tgt):
         optimizer_f.step()
 
         if iter_num % interval_iter == 0 or iter_num == max_iter:
-            base_network.eval()
+            whole_network.eval()
             
-            acc, py, score, y = cal_acc(dset_loaders["test"], base_network, flag=False)
+            acc, py, score, y = cal_acc(dset_loaders["test"], whole_network, flag=False)
             mean_ent = torch.mean(Entropy(score))
             
             list_acc.append(acc)
@@ -366,7 +370,7 @@ def train(args, txt_src, txt_tgt):
     args.out_file.write(log_str + '\n')
     args.out_file.flush()  
    
-    return base_network, py
+    return whole_network, py
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Boost for Domain Adaptation')
