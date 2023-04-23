@@ -220,7 +220,7 @@ def train(args, txt_src, txt_tgt):
     dset_loaders = data_load(args, txt_src, txt_tgt)
     ## set base network
     if args.net[0:3] == 'res':
-        netG = network.ResBase(res_name=args.net).cuda()
+        netG = network.ResBase(res_name=args.net).cuda()#netG -> backbone network (Resnet50)
     elif args.net[0:3] == 'vgg':
         netG = network.VGGBase(vgg_name=args.net).cuda()  
 
@@ -229,7 +229,7 @@ def train(args, txt_src, txt_tgt):
     interval_iter = max_iter // 10
 
     #New Fully Connected Layer
-    fc_layer1 = network.feat_classifier(type='wn', class_num = netG.in_features, bottleneck_dim=2048, type='wn').cuda()
+    new_layer = network.feat_classifier(type='wn', class_num = netG.in_features, bottleneck_dim=2048).cuda()
 
     netB = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=args.bottleneck).cuda()
     netC = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()
@@ -244,15 +244,16 @@ def train(args, txt_src, txt_tgt):
         netG.load_state_dict(torch.load(modelpath))
         modelpath = args.output_dir + "/target_B_" + args.savename + ".pt"   
         netB.load_state_dict(torch.load(modelpath)) 
+        #Copy weights from old feature extractor to new fc layer
+        #new_layer.load_state_dict(torch.load(modelpath))
         
     if len(args.gpu_id.split(',')) > 1:
         netG = nn.DataParallel(netG)
 
 
-    #Copy weights from old feature extractor to new fc layer
-    fc_layer1
+    
 
-    netF = nn.Sequential(fc_layer1, netB, netC)#This is the new FC layer + old feature extractor + old classifier
+    netF = nn.Sequential(new_layer, netB, netC)#This is the new FC layer + old feature extractor + old classifier
     optimizer_g = optim.SGD(netG.parameters(), lr = args.lr * 0.1)#Optimisers set here
     optimizer_f = optim.SGD(netF.parameters(), lr = args.lr)
 
@@ -414,10 +415,10 @@ if __name__ == "__main__":
         dataset = args.dset
         scale_factor = 1.0
         args.dset = dataset + "_1.0"
-
-
-    if dataset == 'office-home':
-        names = ['Art', 'Clipart', 'Product', 'RealWorld']
+        
+    
+    if dataset == 'OfficeHome':
+        names = ['Art', 'Clipart', 'Product', 'Real_World']
         args.class_num = 65 
     elif dataset == 'office':
         names = ['amazon', 'dslr', 'webcam']
@@ -465,7 +466,7 @@ if __name__ == "__main__":
             os.mkdir(args.mm_dir)
         #args.out_file = open(osp.join(args.mm_dir, "{:}_{:}.txt".format(args.log, args.choice)), "w")
 
-        args.out_file = open(osp.join(args.mm_dir, dataset + "_boost_" + 'log_' + args.savename + '.txt'), 'w')
+        args.out_file = open(osp.join(args.mm_dir, dataset + '_boost_log_' + args.savename + '.txt'), 'w')
 
         args.out_file.write(' '.join(sys.argv))
         utils.print_args(args)

@@ -1,0 +1,63 @@
+image_mixmatch.py --gpu_id 0 --seed 2021 --dset OfficeHome_0.25 --max_epoch 15 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --ps 0.0==========================================
+==========       config      =============
+==========================================
+gpu_id:0
+s:0
+t:1
+output:san
+output_tar:ckps/target/
+seed:2021
+max_epoch:15
+batch_size:5
+worker:4
+bottleneck_dim:256
+net:resnet50
+dset:OfficeHome_0.25
+lr:0.01
+alpha:0.75
+lambda_u:100
+T:0.5
+da:uda
+cls_par:0.3
+threshold:0
+ssl:0.6
+ps:0.0
+choice:ent
+layer:wn
+classifier:bn
+bottleneck:256
+gent:True
+model:target
+issave:False
+class_num:65
+t_dset_path:../data/OfficeHome_0.25/Clipart_list.txt
+test_dset_path:../data/OfficeHome_0.25/Clipart_list.txt
+name:AC
+output_dir:ckps/target/uda\OfficeHome_0.25\AC
+savename:par_0.3_ssl_0.6
+log:ps_0.0_par_0.3_ssl_0.6
+mm_dir:san\uda\OfficeHome_0.25\AC
+out_file:<_io.TextIOWrapper name='san\\uda\\OfficeHome_0.25\\AC\\OfficeHome_mixmatchlog_par_0.3_ssl_0.6.txt' mode='w' encoding='cp1252'>
+
+==========================================
+
+Task: AC, Iter:0/0; Accuracy = 53.24%; Mean Ent = 0.1465
+Task: 0.75
+Task: AC, Iter:226/2265; Accuracy = 47.04%; Mean Ent = 1.1084
+Task: AC, Iter:452/2265; Accuracy = 50.42%; Mean Ent = 0.6497
+Task: AC, Iter:678/2265; Accuracy = 51.36%; Mean Ent = 0.5499
+Task: AC, Iter:904/2265; Accuracy = 51.92%; Mean Ent = 0.4722
+Task: AC, Iter:1130/2265; Accuracy = 51.92%; Mean Ent = 0.4474
+Task: AC, Iter:1356/2265; Accuracy = 51.46%; Mean Ent = 0.4074
+Task: AC, Iter:1582/2265; Accuracy = 51.64%; Mean Ent = 0.3740
+Task: AC, Iter:1808/2265; Accuracy = 51.92%; Mean Ent = 0.3793
+Task: AC, Iter:2034/2265; Accuracy = 51.83%; Mean Ent = 0.3177
+Task: AC, Iter:2260/2265; Accuracy = 52.02%; Mean Ent = 0.2854
+Task: AC, Iter:2265/2265; Accuracy = 52.58%; Mean Ent = 0.3351
+
+==========================================
+
+Val Acc = 52.02
+Max Acc = 52.58
+Fin Acc = 52.58
+

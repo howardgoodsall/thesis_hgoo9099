@@ -1,0 +1,62 @@
+image_boost.py --gpu_id 0 --seed 2021 --dset OfficeHome_0.75 --max_epoch 15 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --ps 0.0==========================================
+==========       config      =============
+==========================================
+gpu_id:0
+s:0
+t:1
+output:san
+output_tar:ckps/target/
+seed:2021
+max_epoch:15
+batch_size:5
+worker:4
+bottleneck_dim:256
+net:resnet50
+dset:OfficeHome_0.75
+lr:0.01
+alpha:0.75
+lambda_u:100
+T:0.5
+da:uda
+cls_par:0.3
+threshold:0
+ssl:0.6
+ps:0.0
+choice:ent
+layer:wn
+classifier:bn
+bottleneck:256
+gent:True
+model:target
+issave:False
+class_num:65
+t_dset_path:../data/OfficeHome_0.75/Clipart_list.txt
+test_dset_path:../data/OfficeHome_0.75/Clipart_list.txt
+name:AC
+output_dir:ckps/target/uda\OfficeHome_0.75\AC
+savename:par_0.3_ssl_0.6
+log:ps_0.0_par_0.3_ssl_0.6
+mm_dir:san\uda\OfficeHome_0.75\AC
+out_file:<_io.TextIOWrapper name='san\\uda\\OfficeHome_0.75\\AC\\OfficeHome_boost_log_par_0.3_ssl_0.6.txt' mode='w' encoding='cp1252'>
+
+==========================================
+
+Task: AC, Iter:0/0; Accuracy = 58.78%; Mean Ent = 0.0946
+Task: 0.79
+Task: AC, Iter:762/7620; Accuracy = 54.91%; Mean Ent = 0.7859
+Task: AC, Iter:1524/7620; Accuracy = 56.60%; Mean Ent = 0.5077
+Task: AC, Iter:2286/7620; Accuracy = 57.95%; Mean Ent = 0.4705
+Task: AC, Iter:3048/7620; Accuracy = 58.91%; Mean Ent = 0.3853
+Task: AC, Iter:3810/7620; Accuracy = 59.34%; Mean Ent = 0.3073
+Task: AC, Iter:4572/7620; Accuracy = 59.21%; Mean Ent = 0.3162
+Task: AC, Iter:5334/7620; Accuracy = 59.71%; Mean Ent = 0.3078
+Task: AC, Iter:6096/7620; Accuracy = 59.77%; Mean Ent = 0.3539
+Task: AC, Iter:6858/7620; Accuracy = 59.89%; Mean Ent = 0.3110
+Task: AC, Iter:7620/7620; Accuracy = 59.77%; Mean Ent = 0.2270
+
+==========================================
+
+Val Acc = 59.77
+Max Acc = 59.89
+Fin Acc = 59.77
+

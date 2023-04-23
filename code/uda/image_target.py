@@ -459,8 +459,8 @@ if __name__ == "__main__":
     dataset, scale_factor = args.dset.split('_')
 
 
-    if dataset == 'office-home':
-        names = ['Art', 'Clipart', 'Product', 'RealWorld']
+    if dataset == 'OfficeHome':
+        names = ['Art', 'Clipart', 'Product', 'Real_World']
         args.class_num = 65 
     elif dataset == 'office':
         names = ['amazon', 'dslr', 'webcam']
@@ -488,7 +488,7 @@ if __name__ == "__main__":
         args.t_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'#target train data
         args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'#test data
 
-        args.output_dir_src = osp.join(args.output_src, args.da, dataset, names[args.s][0].upper())
+        args.output_dir_src = osp.join(args.output_src, args.da, str(dataset + "_1.0"), names[args.s][0].upper())
         args.output_dir = osp.join(args.output, args.da, args.dset, names[args.s][0].upper()+names[args.t][0].upper())
         args.name = names[args.s][0].upper()+names[args.t][0].upper()
 
@@ -501,7 +501,7 @@ if __name__ == "__main__":
         if args.ssl > 0:
              args.savename += ('_ssl_' + str(args.ssl))
         
-        args.out_file = open(osp.join(args.output_dir, dataset + 'log_' + args.savename + '.txt'), 'w')
+        args.out_file = open(osp.join(args.output_dir, dataset + '_target_log_' + args.savename + '.txt'), 'w')
         args.out_file.write(' '.join(sys.argv))
         args.out_file.write(print_args(args)+'\n')
         args.out_file.flush()

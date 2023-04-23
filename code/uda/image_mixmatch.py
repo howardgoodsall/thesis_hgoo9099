@@ -426,8 +426,8 @@ if __name__ == "__main__":
     dataset, scale_factor = args.dset.split('_')
 
 
-    if dataset == 'office-home':
-        names = ['Art', 'Clipart', 'Product', 'RealWorld']
+    if dataset == 'OfficeHome':
+        names = ['Art', 'Clipart', 'Product', 'Real_World']
         args.class_num = 65 
     elif dataset == 'office':
         names = ['amazon', 'dslr', 'webcam']

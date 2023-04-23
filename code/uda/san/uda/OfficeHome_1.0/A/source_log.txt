@@ -1,0 +1,35 @@
+==========================================
+gpu_id:0
+s:0
+t:1
+max_epoch:100
+batch_size:32
+worker:4
+dset:OfficeHome_1.0
+lr:0.01
+net:resnet50
+seed:2021
+bottleneck:256
+epsilon:1e-05
+layer:wn
+classifier:bn
+smooth:0.1
+output:san
+da:uda
+class_num:65
+s_dset_path:../data/OfficeHome_1.0/Art_list.txt
+test_dset_path:../data/OfficeHome_1.0/Clipart_list.txt
+output_dir_src:san\uda\OfficeHome_1.0\A
+name_src:A
+out_file:<_io.TextIOWrapper name='san\\uda\\OfficeHome_1.0\\A\\source_log.txt' mode='w' encoding='cp1252'>
+
+Task: A, Iter:690/6900; Accuracy = 74.90%
+Task: A, Iter:1380/6900; Accuracy = 74.90%
+Task: A, Iter:2070/6900; Accuracy = 74.90%
+Task: A, Iter:2760/6900; Accuracy = 74.90%
+Task: A, Iter:3450/6900; Accuracy = 75.72%
+Task: A, Iter:4140/6900; Accuracy = 74.49%
+Task: A, Iter:4830/6900; Accuracy = 74.90%
+Task: A, Iter:5520/6900; Accuracy = 76.13%
+Task: A, Iter:6210/6900; Accuracy = 75.31%
+Task: A, Iter:6900/6900; Accuracy = 76.54%

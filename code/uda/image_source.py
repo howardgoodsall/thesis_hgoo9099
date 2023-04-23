@@ -291,12 +291,12 @@ if __name__ == "__main__":
     if not osp.exists(args.output_dir_src):
         os.mkdir(args.output_dir_src)
 
-    args.out_file = open(osp.join(args.output_dir_src, 'log.txt'), 'w')
+    args.out_file = open(osp.join(args.output_dir_src, 'source_log.txt'), 'w')
     args.out_file.write(print_args(args)+'\n')
     args.out_file.flush()
     train_source(args)
 
-    args.out_file = open(osp.join(args.output_dir_src, 'log_test.txt'), 'w')
+    args.out_file = open(osp.join(args.output_dir_src, 'source_log_test.txt'), 'w')
     for i in range(len(names)):
         if i == args.s:
             continue

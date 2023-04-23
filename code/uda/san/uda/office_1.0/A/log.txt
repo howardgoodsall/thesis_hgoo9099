@@ -23,13 +23,3 @@ output_dir_src:san\uda\office_1.0\A
 name_src:A
 out_file:<_io.TextIOWrapper name='san\\uda\\office_1.0\\A\\log.txt' mode='w' encoding='cp1252'>
 
-Task: A, Iter:800/8000; Accuracy = 86.88%
-Task: A, Iter:1600/8000; Accuracy = 87.94%
-Task: A, Iter:2400/8000; Accuracy = 88.30%
-Task: A, Iter:3200/8000; Accuracy = 88.30%
-Task: A, Iter:4000/8000; Accuracy = 89.01%
-Task: A, Iter:4800/8000; Accuracy = 90.07%
-Task: A, Iter:5600/8000; Accuracy = 88.30%
-Task: A, Iter:6400/8000; Accuracy = 89.01%
-Task: A, Iter:7200/8000; Accuracy = 89.01%
-Task: A, Iter:8000/8000; Accuracy = 89.36%
