@@ -21,8 +21,10 @@ import copy
 import torch.nn.functional as F
 from scipy.spatial.distance import cdist
 import network
-from data_list import ImageList, ImageList_twice
+from data_list import ImageList, ImageList_twice, ImageListAugment
 from sklearn.metrics import confusion_matrix
+
+#from torchsummary import summary
 
 def split_target(args):
     test_transform = torchvision.transforms.Compose([
@@ -61,6 +63,7 @@ def split_target(args):
     netF.eval()
     netB.eval()
     netC.eval()
+    #Test the network from the 2nd step
 
     start_test = True
     with torch.no_grad():
@@ -83,16 +86,18 @@ def split_target(args):
     mean_ent = loss.Entropy(nn.Softmax(dim=1)(all_output))#Mean Entropy Calculation
 
     log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}'.format(args.name, 0, 0, acc, mean_ent.mean())
-    args.out_file.write(log_str + '\n')
-    args.out_file.flush()
+    if(not(args.nolog)):
+        args.out_file.write(log_str + '\n')
+        args.out_file.flush()
     print(log_str+'\n')     
 
     if args.ps == 0:
         est_p = (mean_ent<mean_ent.mean()).sum().item() / mean_ent.size(0)
         log_str = 'Task: {:.2f}'.format(est_p)
         print(log_str + '\n')
-        args.out_file.write(log_str + '\n')
-        args.out_file.flush()
+        if(not(args.nolog)):
+            args.out_file.write(log_str + '\n')
+            args.out_file.flush()
         PS = est_p
     else:
         PS = args.ps
@@ -150,6 +155,15 @@ def data_load(args, txt_src, txt_tgt):
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
+    train_augment = torchvision.transforms.Compose([
+        torchvision.transforms.Resize((256, 256)),
+        torchvision.transforms.RandomCrop(224),
+        torchvision.transforms.AugMix(severity=2),#Data Augmentations
+        torchvision.transforms.RandomHorizontalFlip(),
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    
     test_transform = torchvision.transforms.Compose([
         torchvision.transforms.Resize((256, 256)),
         torchvision.transforms.CenterCrop(224),
@@ -158,13 +172,19 @@ def data_load(args, txt_src, txt_tgt):
     ])
 
     dsets = {}
+    #if args.model == "source":
     dsets["source"] = ImageList(txt_src, transform=train_transform)
-    dsets["target"] = ImageList_twice(txt_tgt, transform=[train_transform, train_transform])
+    
+    if args.augratio != 0.0:
+        dsets["target"] = ImageListAugment(args.augratio, txt_tgt, transform=[train_transform, train_transform], transform_augment=train_augment)
+    else:
+        dsets["target"] = ImageList_twice(txt_tgt, transform=[train_transform, train_transform])
 
     txt_test = open(args.test_dset_path).readlines()
     dsets["test"] = ImageList(txt_test, transform=test_transform)
 
     dset_loaders = {}
+    #if args.model == "source":
     dset_loaders["source"] = torch.utils.data.DataLoader(dsets["source"], batch_size=args.batch_size,
         shuffle=True, num_workers=args.worker, drop_last=True)
     dset_loaders["target"] = torch.utils.data.DataLoader(dsets["target"], batch_size=args.batch_size,
@@ -228,11 +248,10 @@ def train(args, txt_src, txt_tgt):
     max_iter = args.max_epoch*max_len
     interval_iter = max_iter // 10
 
-    #New Fully Connected Layer
-    new_layer = network.feat_classifier(type='wn', class_num = netG.in_features, bottleneck_dim=2048).cuda()
+    
 
-    netB = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=args.bottleneck).cuda()
-    netC = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()
+    netB = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=args.bottleneck).cuda()#feature_dim -> in?, bottleneck_dim -> out
+    netC = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()#bottleneck_dim -> in, class_num -> out
 
     if args.model == "source":
         modelpath = args.output_dir + "/source_F.pt" 
@@ -250,10 +269,13 @@ def train(args, txt_src, txt_tgt):
     if len(args.gpu_id.split(',')) > 1:
         netG = nn.DataParallel(netG)
 
-
+    #New Fully Connected Layer
+    inner_ln = network.feat_classifier(type='wn', class_num = 2048, bottleneck_dim=netG.in_features).cuda()
+    #inner_bn = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=netG.in_features).cuda()
+    target_classifer = network.ResidualBlock([inner_ln])
     
 
-    netF = nn.Sequential(new_layer, netB, netC)#This is the new FC layer + old feature extractor + old classifier
+    netF = nn.Sequential(target_classifer, netB, netC)#This is the new FC layer + old feature extractor + old classifier
     optimizer_g = optim.SGD(netG.parameters(), lr = args.lr * 0.1)#Optimisers set here
     optimizer_f = optim.SGD(netF.parameters(), lr = args.lr)
 
@@ -266,6 +288,10 @@ def train(args, txt_src, txt_tgt):
 
     for iter_num in range(1, max_iter + 1):
         whole_network.train()
+
+        #summary(whole_network, input_size=(3, 256, 256))
+        #sys.exit(0)
+
         lr_scheduler(optimizer_g, init_lr=args.lr * 0.1, iter_num=iter_num, max_iter=max_iter)
         lr_scheduler(optimizer_f, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
 
@@ -358,8 +384,9 @@ def train(args, txt_src, txt_tgt):
                 best_score = score
 
             log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}'.format(args.name, iter_num, max_iter, acc, mean_ent)
-            args.out_file.write(log_str + '\n')
-            args.out_file.flush()
+            if(not(args.nolog)):
+                args.out_file.write(log_str + '\n')
+                args.out_file.flush()
             print(log_str+'\n')            
 
     idx = np.argmax(np.array(list_acc))
@@ -368,8 +395,9 @@ def train(args, txt_src, txt_tgt):
 
     log_str = '\n==========================================\n'
     log_str += '\nVal Acc = {:.2f}\nMax Acc = {:.2f}\nFin Acc = {:.2f}\n'.format(val_acc, max_acc, final_acc)
-    args.out_file.write(log_str + '\n')
-    args.out_file.flush()  
+    if(not(args.nolog)):
+        args.out_file.write(log_str + '\n')
+        args.out_file.flush()  
    
     return whole_network, py
 
@@ -406,6 +434,8 @@ if __name__ == "__main__":
     parser.add_argument('--gent', type=bool, default=True)
     parser.add_argument('--model', type=str, default="target", choices=["source", 'target'])
     parser.add_argument('--issave', type=bool, default=False)
+    parser.add_argument('--nolog', type=bool, default=False)#don't write to log file if True
+    parser.add_argument('--augratio', type=float, default=0.0)#Ratio of original data to augmented data
 
     args = parser.parse_args()
 
@@ -457,20 +487,21 @@ if __name__ == "__main__":
 
         if args.model == "source":
             args.savename = "srconly"
+        if(not(args.nolog)):
+            args.log = 'ps_' + str(args.ps) + '_' + args.savename
+            args.mm_dir = osp.join(args.output, args.da, args.dset, args.name)
+            if not osp.exists(args.mm_dir):
+                os.system('mkdir -p ' + args.mm_dir)
+            if not osp.exists(args.mm_dir):
+                os.mkdir(args.mm_dir)
+            #args.out_file = open(osp.join(args.mm_dir, "{:}_{:}.txt".format(args.log, args.choice)), "w")
 
-        args.log = 'ps_' + str(args.ps) + '_' + args.savename
-        args.mm_dir = osp.join(args.output, args.da, args.dset, args.name)
-        if not osp.exists(args.mm_dir):
-            os.system('mkdir -p ' + args.mm_dir)
-        if not osp.exists(args.mm_dir):
-            os.mkdir(args.mm_dir)
-        #args.out_file = open(osp.join(args.mm_dir, "{:}_{:}.txt".format(args.log, args.choice)), "w")
+            args.out_file = open(osp.join(args.mm_dir, dataset + '_boost_log_' + args.savename + '.txt'), 'w')
 
-        args.out_file = open(osp.join(args.mm_dir, dataset + '_boost_log_' + args.savename + '.txt'), 'w')
-
-        args.out_file.write(' '.join(sys.argv))
-        utils.print_args(args)
+            args.out_file.write(' '.join(sys.argv))
+            utils.print_args(args)
         txt_src, txt_tgt = split_target(args)
         train(args, txt_src, txt_tgt)
 
-        args.out_file.close()
+        if(not(args.nolog)):
+            args.out_file.close()

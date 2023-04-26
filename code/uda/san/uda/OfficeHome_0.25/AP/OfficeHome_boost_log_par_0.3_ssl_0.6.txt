@@ -1,4 +1,4 @@
-image_boost.py --gpu_id 0 --seed 2021 --dset OfficeHome_0.25 --max_epoch 15 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --ps 0.0==========================================
+image_boost.py --gpu_id 0 --seed 2021 --dset OfficeHome_0.25 --max_epoch 15 --s 0 --output_tar ckps/target/ --ssl 0.6 --ps 0.0 --augratio 1.5==========================================
 ==========       config      =============
 ==========================================
 gpu_id:0
@@ -29,6 +29,8 @@ bottleneck:256
 gent:True
 model:target
 issave:False
+nolog:False
+augratio:1.5
 class_num:65
 t_dset_path:../data/OfficeHome_0.25/Product_list.txt
 test_dset_path:../data/OfficeHome_0.25/Product_list.txt
@@ -40,23 +42,4 @@ mm_dir:san\uda\OfficeHome_0.25\AP
 out_file:<_io.TextIOWrapper name='san\\uda\\OfficeHome_0.25\\AP\\OfficeHome_boost_log_par_0.3_ssl_0.6.txt' mode='w' encoding='cp1252'>
 
 ==========================================
-
-Task: AP, Iter:0/0; Accuracy = 72.90%; Mean Ent = 0.1187
-Task: 0.75
-Task: AP, Iter:231/2310; Accuracy = 68.18%; Mean Ent = 0.9067
-Task: AP, Iter:462/2310; Accuracy = 70.77%; Mean Ent = 0.5275
-Task: AP, Iter:693/2310; Accuracy = 72.80%; Mean Ent = 0.4017
-Task: AP, Iter:924/2310; Accuracy = 73.27%; Mean Ent = 0.3448
-Task: AP, Iter:1155/2310; Accuracy = 72.99%; Mean Ent = 0.2970
-Task: AP, Iter:1386/2310; Accuracy = 73.82%; Mean Ent = 0.2882
-Task: AP, Iter:1617/2310; Accuracy = 73.73%; Mean Ent = 0.2688
-Task: AP, Iter:1848/2310; Accuracy = 73.08%; Mean Ent = 0.2810
-Task: AP, Iter:2079/2310; Accuracy = 73.45%; Mean Ent = 0.2698
-Task: AP, Iter:2310/2310; Accuracy = 73.73%; Mean Ent = 0.2612
-
-==========================================
-
-Val Acc = 73.73
-Max Acc = 73.82
-Fin Acc = 73.73
 

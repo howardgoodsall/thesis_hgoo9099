@@ -24,6 +24,21 @@ def make_dataset(image_list, labels):
     return images
 
 
+def make_dataset_augment(image_list, labels, ratio):
+    print("Original Dataset size: " + str(len(image_list)))
+    print("Dataset size with Augmented data: " + str(len(image_list) + int(ratio*len(image_list))))
+    last_index = len(image_list)
+    if labels:#Augmented data is unlabelled
+      len_ = len(image_list)+ ratio*len(image_list)
+      images = [(image_list[i].strip(), labels[i, :]) for i in range(len_)]
+    else:
+      if len(image_list[0].split()) > 2:
+        images = [(val.split()[0], np.array([int(la) for la in val.split()[1:]])) for val in image_list]
+      else:
+        images = [(val.split()[0], int(val.split()[1])) for val in image_list]
+    return images, last_index 
+
+
 def rgb_loader(path):
     with open(path, 'rb') as f:
         with Image.open(f) as img:
@@ -62,6 +77,45 @@ class ImageList(Dataset):
     def __len__(self):
         return len(self.imgs)
 
+
+class ImageListAugment(Dataset):
+    def __init__(self, ratio, image_list, labels=None, transform=None, transform_augment=None, mode='RGB'):
+        imgs, last_index = make_dataset_augment(image_list, labels, ratio)
+        self.ratio = ratio
+        self.last_index = last_index
+        if len(imgs) == 0:
+            raise(RuntimeError("Found 0 images in subfolders of: " + root + "\n"
+                               "Supported image extensions are: " + ",".join(IMG_EXTENSIONS)))
+
+        self.imgs = imgs
+        self.transform = transform
+        self.transform_augment = transform_augment
+        if mode == 'RGB':
+            self.loader = rgb_loader
+        elif mode == 'L':
+            self.loader = l_loader
+
+    def __getitem__(self, index):
+        if(index >= self.last_index):
+            orig_index = random.randint(0, self.last_index-1)
+            path, target = self.imgs[orig_index]
+            img = self.loader(path)
+            if type(self.transform).__name__=='list':
+                img = [self.transform_augment(img), self.transform[0](img)]
+            else:
+                img = self.transform_augment(img)
+        else:
+            path, target = self.imgs[index]
+            img = self.loader(path)
+            if self.transform is not None:
+                if type(self.transform).__name__=='list':
+                    img = [t(img) for t in self.transform]
+                else:
+                    img = self.transform(img)
+        return img, target, index
+
+    def __len__(self):
+        return len(self.imgs)+int(self.ratio*len(self.imgs))
 
 class ImageList_twice(Dataset):
     def __init__(self, image_list, labels=None, transform=None, target_transform=None, mode='RGB'):

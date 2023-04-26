@@ -59,6 +59,25 @@ class RandomLayer(nn.Module):
         super(RandomLayer, self).cuda()
         self.random_matrix = [val.cuda() for val in self.random_matrix]
 
+
+class ResidualBlock(nn.Module):
+    def __init__(self, inner_layers, downsample=None):
+        super(ResidualBlock, self).__init__()
+        self.inner_layers = inner_layers#Inner layers operate as normal
+        self.relu = nn.ReLU(inplace=True)#Uses ReLu after residual connection
+        self.downsample = downsample
+        
+    def forward(self, x):
+        residual = x
+        out = x
+        for layer in self.inner_layers:
+            out = layer.forward(out)
+        if self.downsample:
+            residual = self.downsample(x)
+        out += residual
+        out = self.relu(out)
+        return out
+
 # For SVHN dataset
 class DTN(nn.Module):
     def __init__(self):
@@ -497,7 +516,7 @@ class feat_bottleneck(nn.Module):
         return x
 
 class feat_classifier(nn.Module):
-    def __init__(self, class_num, bottleneck_dim=256, type="linear"):
+    def __init__(self, class_num, bottleneck_dim=256, type="linear"):#bottleneck_dim -> in, class_num -> out
         super(feat_classifier, self).__init__()
         self.type = type
         if type == 'wn':

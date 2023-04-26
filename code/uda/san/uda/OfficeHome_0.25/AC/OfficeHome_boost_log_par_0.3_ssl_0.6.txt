@@ -1,4 +1,4 @@
-image_boost.py --gpu_id 0 --seed 2021 --dset OfficeHome_0.25 --max_epoch 15 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --ps 0.0==========================================
+image_boost.py --gpu_id 0 --seed 2021 --dset OfficeHome_0.25 --max_epoch 15 --s 0 --output_tar ckps/target/ --ssl 0.6 --ps 0.0 --augratio 1.5==========================================
 ==========       config      =============
 ==========================================
 gpu_id:0
@@ -29,6 +29,8 @@ bottleneck:256
 gent:True
 model:target
 issave:False
+nolog:False
+augratio:1.5
 class_num:65
 t_dset_path:../data/OfficeHome_0.25/Clipart_list.txt
 test_dset_path:../data/OfficeHome_0.25/Clipart_list.txt
@@ -43,21 +45,21 @@ out_file:<_io.TextIOWrapper name='san\\uda\\OfficeHome_0.25\\AC\\OfficeHome_boos
 
 Task: AC, Iter:0/0; Accuracy = 53.24%; Mean Ent = 0.1465
 Task: 0.75
-Task: AC, Iter:226/2265; Accuracy = 45.92%; Mean Ent = 1.3737
-Task: AC, Iter:452/2265; Accuracy = 48.17%; Mean Ent = 0.7513
-Task: AC, Iter:678/2265; Accuracy = 49.67%; Mean Ent = 0.6759
-Task: AC, Iter:904/2265; Accuracy = 50.80%; Mean Ent = 0.4930
-Task: AC, Iter:1130/2265; Accuracy = 51.08%; Mean Ent = 0.4679
-Task: AC, Iter:1356/2265; Accuracy = 51.83%; Mean Ent = 0.3825
-Task: AC, Iter:1582/2265; Accuracy = 51.92%; Mean Ent = 0.3972
-Task: AC, Iter:1808/2265; Accuracy = 52.11%; Mean Ent = 0.3779
-Task: AC, Iter:2034/2265; Accuracy = 51.92%; Mean Ent = 0.3090
-Task: AC, Iter:2260/2265; Accuracy = 51.74%; Mean Ent = 0.2952
-Task: AC, Iter:2265/2265; Accuracy = 51.83%; Mean Ent = 0.3127
+Task: AC, Iter:229/2295; Accuracy = 46.10%; Mean Ent = 1.0969
+Task: AC, Iter:458/2295; Accuracy = 50.80%; Mean Ent = 0.7091
+Task: AC, Iter:687/2295; Accuracy = 50.80%; Mean Ent = 0.6094
+Task: AC, Iter:916/2295; Accuracy = 52.02%; Mean Ent = 0.5012
+Task: AC, Iter:1145/2295; Accuracy = 51.83%; Mean Ent = 0.4405
+Task: AC, Iter:1374/2295; Accuracy = 52.02%; Mean Ent = 0.4242
+Task: AC, Iter:1603/2295; Accuracy = 52.39%; Mean Ent = 0.3917
+Task: AC, Iter:1832/2295; Accuracy = 52.30%; Mean Ent = 0.4047
+Task: AC, Iter:2061/2295; Accuracy = 52.96%; Mean Ent = 0.3806
+Task: AC, Iter:2290/2295; Accuracy = 52.49%; Mean Ent = 0.3477
+Task: AC, Iter:2295/2295; Accuracy = 52.68%; Mean Ent = 0.3458
 
 ==========================================
 
-Val Acc = 51.74
-Max Acc = 52.11
-Fin Acc = 51.83
+Val Acc = 52.68
+Max Acc = 52.96
+Fin Acc = 52.68
 
