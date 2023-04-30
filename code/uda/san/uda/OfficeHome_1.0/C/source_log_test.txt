@@ -1,0 +1,4 @@
+
+Task: CA, Accuracy = 54.59%
+Task: CP, Accuracy = 63.93%
+Task: CR, Accuracy = 65.60%

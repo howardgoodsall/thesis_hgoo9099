@@ -485,8 +485,8 @@ if __name__ == "__main__":
         args.t = i
 
         args.s_dset_path = folder + args.dset + '/' + names[args.s] + '_list.txt'#Source data
-        args.t_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'#target train data
-        args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'#test data
+        args.t_dset_path = folder + args.dset + '/' + names[args.t] + '_train_list.txt'
+        args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_test_list.txt'
 
         args.output_dir_src = osp.join(args.output_src, args.da, str(dataset + "_1.0"), names[args.s][0].upper())
         args.output_dir = osp.join(args.output, args.da, args.dset, names[args.s][0].upper()+names[args.t][0].upper())

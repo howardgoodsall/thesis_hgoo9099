@@ -1,14 +1,14 @@
 """
 Generates lists of images for input to the rest of the code. Adapted from https://github.com/tim-learn/Generate_list. 
+Usage: python3 dataset_list_gen.py <scale factor between 0 and 1 - e.g. 0.5>
 """
 import os
 import sys
 
 if(len(sys.argv) != 2):
-	print("usage: python3 dataset_list_gen.py <scale factor between 0 and 1 - e.g. 0.5>")
-	sys.exit(0)
-
-scale_factor = float(sys.argv[1])
+	scale_factor = 1.0
+else:
+	scale_factor = float(sys.argv[1])
 
 if(scale_factor >1 or scale_factor<0):
 	print("usage: python3 dataset_list_gen.py <scale factor between 0 and 1 - e.g. 0.5>")
@@ -49,19 +49,32 @@ for d in range(len(domains)):
 		classes.sort()
 		
 		f = open(dom_new + "_list.txt", "w")
+		f_train = open(dom_new + "_train_list.txt", "w")
+		f_test = open(dom_new + "_test_list.txt", "w")
 		for c in range(len(classes)):
 			cla = classes[c]
 			cla_new = cla.replace(" ","_")
 			os.rename(os.path.join(folder, dom_new, cla), os.path.join(folder, dom_new, cla_new))
 			files = os.listdir(os.path.join(folder, dom_new, cla_new))
-			old_len = len(files)
-			files = files[:int(len(files)*scale_factor)]
-			print(cla_new + ": " + str(old_len) + " -> " + str(len(files)))
+			train_files = files[:int(len(files)*0.9)]#Default train test split is 9:1
+			test_files = files[int(len(files)*0.1):]
+			train_files = train_files[:int(len(train_files)*scale_factor)]#Further reduce train files by scale factor
+			print(cla_new + ": Total: " + str(len(files)) + " Train: " + str(len(train_files)) + " Test: " + str(len(test_files)))
 			files.sort()#order that files are read by os is random
-			files = files
+			#files = files
 			for file in files:
 				file_new = file.replace(" ","_")
 				os.rename(os.path.join(folder, dom_new, cla_new, file), os.path.join(folder, dom_new, cla_new, file_new))
 				f.write('{:} {:}\n'.format(os.path.join(folder, dom_new, cla_new, file_new), c))
+			for file in train_files:
+				file_new = file.replace(" ","_")
+				os.rename(os.path.join(folder, dom_new, cla_new, file), os.path.join(folder, dom_new, cla_new, file_new))
+				f_train.write('{:} {:}\n'.format(os.path.join(folder, dom_new, cla_new, file_new), c))
+			for file in test_files:
+				file_new = file.replace(" ","_")
+				os.rename(os.path.join(folder, dom_new, cla_new, file), os.path.join(folder, dom_new, cla_new, file_new))
+				f_test.write('{:} {:}\n'.format(os.path.join(folder, dom_new, cla_new, file_new), c))
 		f.close()
+		f_train.close()
+		f_test.close()
 		

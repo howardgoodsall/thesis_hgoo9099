@@ -455,8 +455,8 @@ if __name__ == "__main__":
             continue
         args.t = i
 
-        args.t_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'
-        args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'
+        args.t_dset_path = folder + args.dset + '/' + names[args.t] + '_train_list.txt'
+        args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_test_list.txt'
 
         args.name = names[args.s][0].upper() + names[args.t][0].upper() 
         if args.model == "source": 

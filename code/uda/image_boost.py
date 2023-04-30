@@ -26,6 +26,41 @@ from sklearn.metrics import confusion_matrix
 
 #from torchsummary import summary
 
+class CrossEntropyLabelSmooth(nn.Module):
+    """Cross entropy loss with label smoothing regularizer.
+    Reference:
+    Szegedy et al. Rethinking the Inception Architecture for Computer Vision. CVPR 2016.
+    Equation: y = (1 - epsilon) * y + epsilon / K.
+    Args:
+        num_classes (int): number of classes.
+        epsilon (float): weight.
+    """
+
+    def __init__(self, num_classes, epsilon=0.1, use_gpu=True, reduction=True):
+        super(CrossEntropyLabelSmooth, self).__init__()
+        self.num_classes = num_classes
+        self.epsilon = epsilon
+        self.use_gpu = use_gpu
+        self.reduction = reduction
+        self.logsoftmax = nn.LogSoftmax(dim=1)
+
+    def forward(self, inputs, targets):
+        """
+        Args:
+            inputs: prediction matrix (before softmax) with shape (batch_size, num_classes)
+            targets: ground truth labels with shape (num_classes)
+        """
+        log_probs = self.logsoftmax(inputs)
+        #targets = torch.zeros(log_probs.size()).scatter_(1, targets.unsqueeze(1).type(torch.int64).cpu(), 1)
+        if self.use_gpu: targets = targets.cuda()
+        targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
+        loss = (- targets * log_probs).sum(dim=1)
+        if self.reduction:
+            return loss.mean()
+        else:
+            return loss
+        return loss
+
 def split_target(args):
     test_transform = torchvision.transforms.Compose([
         torchvision.transforms.Resize((256, 256)),
@@ -158,7 +193,8 @@ def data_load(args, txt_src, txt_tgt):
     train_augment = torchvision.transforms.Compose([
         torchvision.transforms.Resize((256, 256)),
         torchvision.transforms.RandomCrop(224),
-        torchvision.transforms.AugMix(severity=2),#Data Augmentations
+        torchvision.transforms.AugMix(severity=3),#Data Augmentations
+        torchvision.transforms.GaussianBlur(kernel_size=(5, 9)),
         torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -270,12 +306,14 @@ def train(args, txt_src, txt_tgt):
         netG = nn.DataParallel(netG)
 
     #New Fully Connected Layer
-    inner_ln = network.feat_classifier(type='wn', class_num = 2048, bottleneck_dim=netG.in_features).cuda()
-    #inner_bn = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=netG.in_features).cuda()
-    target_classifer = network.ResidualBlock([inner_ln])
-    
+    inner_wn = network.feat_classifier(type='wn', class_num = 512, bottleneck_dim=netG.in_features).cuda()
+    inner_ln = network.feat_classifier(type='linear', class_num = netG.in_features, bottleneck_dim=512).cuda()
+    #inner_bn = network.feat_bottleneck(type=args.classifier, feature_dim=512, bottleneck_dim=netG.in_features).cuda()
+    #res_classifier = utils.ResClassifier(args.class_num, netG.in_features)
+    target_classifer = network.ResidualBlock([inner_wn, inner_ln])    #
 
     netF = nn.Sequential(target_classifer, netB, netC)#This is the new FC layer + old feature extractor + old classifier
+    #netF = nn.Sequential(target_classifer, res_classifier)
     optimizer_g = optim.SGD(netG.parameters(), lr = args.lr * 0.1)#Optimisers set here
     optimizer_f = optim.SGD(netF.parameters(), lr = args.lr)
 
@@ -357,11 +395,20 @@ def train(args, txt_src, txt_tgt):
         logits_u = torch.cat(logits[1:], dim=0)
 
         train_criterion = utils.SemiLoss()
+        label_smooth = CrossEntropyLabelSmooth(args.class_num)
+        Lx = label_smooth.forward(logits_x, mixed_target[:args.batch_size])
+        Lu = label_smooth.forward(logits_u, mixed_target[args.batch_size:])
+        w = utils.linear_rampup(iter_num, max_iter)
 
-        Lx, Lu, w = train_criterion(logits_x, mixed_target[:args.batch_size], logits_u, mixed_target[args.batch_size:], 
-            iter_num, max_iter, args.lambda_u)
+        #Lx, Lu, w = train_criterion(logits_x, mixed_target[:args.batch_size], logits_u, mixed_target[args.batch_size:], 
+        #    iter_num, max_iter, args.lambda_u)
         loss = Lx + w * Lu
-
+        """
+        #Batch Nuclear Norm Maximisation
+        list_svd,_ = torch.sort(torch.sqrt(torch.sum(torch.pow(logits_x,2),dim=0)), descending=True)
+        nums = min(logits_x.shape[0],logits_x.shape[1])
+        L_FBNM = - torch.sum(list_svd[:nums])
+        """
         optimizer_g.zero_grad()
         optimizer_f.zero_grad()
         loss.backward()
@@ -472,8 +519,8 @@ if __name__ == "__main__":
             continue
         args.t = i
 
-        args.t_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'
-        args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'
+        args.t_dset_path = folder + args.dset + '/' + names[args.t] + '_train_list.txt'
+        args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_test_list.txt'
 
         args.name = names[args.s][0].upper() + names[args.t][0].upper() 
         if args.model == "source": 
