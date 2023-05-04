@@ -30,8 +30,8 @@ gent:True
 model:target
 issave:False
 class_num:65
-t_dset_path:../data/OfficeHome_0.25/Product_list.txt
-test_dset_path:../data/OfficeHome_0.25/Product_list.txt
+t_dset_path:../data/OfficeHome_0.25/Product_train_list.txt
+test_dset_path:../data/OfficeHome_0.25/Product_test_list.txt
 name:AP
 output_dir:ckps/target/uda\OfficeHome_0.25\AP
 savename:par_0.3_ssl_0.6
@@ -41,22 +41,22 @@ out_file:<_io.TextIOWrapper name='san\\uda\\OfficeHome_0.25\\AP\\OfficeHome_mixm
 
 ==========================================
 
-Task: AP, Iter:0/0; Accuracy = 72.90%; Mean Ent = 0.1187
-Task: 0.75
-Task: AP, Iter:231/2310; Accuracy = 70.49%; Mean Ent = 0.5918
-Task: AP, Iter:462/2310; Accuracy = 72.62%; Mean Ent = 0.3877
-Task: AP, Iter:693/2310; Accuracy = 73.17%; Mean Ent = 0.3459
-Task: AP, Iter:924/2310; Accuracy = 73.45%; Mean Ent = 0.3115
-Task: AP, Iter:1155/2310; Accuracy = 74.19%; Mean Ent = 0.2902
-Task: AP, Iter:1386/2310; Accuracy = 74.10%; Mean Ent = 0.2505
-Task: AP, Iter:1617/2310; Accuracy = 73.91%; Mean Ent = 0.2172
-Task: AP, Iter:1848/2310; Accuracy = 74.01%; Mean Ent = 0.2295
-Task: AP, Iter:2079/2310; Accuracy = 74.38%; Mean Ent = 0.2168
-Task: AP, Iter:2310/2310; Accuracy = 74.56%; Mean Ent = 0.1587
+Task: AP, Iter:0/0; Accuracy = 73.25%; Mean Ent = 0.1137
+Task: 0.74
+Task: AP, Iter:207/2070; Accuracy = 61.68%; Mean Ent = 1.1153
+Task: AP, Iter:414/2070; Accuracy = 65.73%; Mean Ent = 0.8105
+Task: AP, Iter:621/2070; Accuracy = 67.77%; Mean Ent = 0.7983
+Task: AP, Iter:828/2070; Accuracy = 68.76%; Mean Ent = 0.7943
+Task: AP, Iter:1035/2070; Accuracy = 68.04%; Mean Ent = 0.8551
+Task: AP, Iter:1242/2070; Accuracy = 68.19%; Mean Ent = 0.8051
+Task: AP, Iter:1449/2070; Accuracy = 69.38%; Mean Ent = 0.7620
+Task: AP, Iter:1656/2070; Accuracy = 69.63%; Mean Ent = 0.7281
+Task: AP, Iter:1863/2070; Accuracy = 69.11%; Mean Ent = 0.7995
+Task: AP, Iter:2070/2070; Accuracy = 70.57%; Mean Ent = 0.8663
 
 ==========================================
 
-Val Acc = 74.56
-Max Acc = 74.56
-Fin Acc = 74.56
+Val Acc = 69.63
+Max Acc = 70.57
+Fin Acc = 70.57
 

@@ -194,7 +194,7 @@ def data_load(args, txt_src, txt_tgt):
         torchvision.transforms.Resize((256, 256)),
         torchvision.transforms.RandomCrop(224),
         torchvision.transforms.AugMix(severity=3),#Data Augmentations
-        torchvision.transforms.GaussianBlur(kernel_size=(5, 9)),
+        #torchvision.transforms.GaussianBlur(kernel_size=(5, 9)),
         torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -306,18 +306,24 @@ def train(args, txt_src, txt_tgt):
         netG = nn.DataParallel(netG)
 
     #New Fully Connected Layer
-    inner_wn = network.feat_classifier(type='wn', class_num = 512, bottleneck_dim=netG.in_features).cuda()
-    inner_ln = network.feat_classifier(type='linear', class_num = netG.in_features, bottleneck_dim=512).cuda()
-    #inner_bn = network.feat_bottleneck(type=args.classifier, feature_dim=512, bottleneck_dim=netG.in_features).cuda()
-    #res_classifier = utils.ResClassifier(args.class_num, netG.in_features)
-    target_classifer = network.ResidualBlock([inner_wn, inner_ln])    #
+    inner_wn = network.feat_classifier(type='wn', class_num = 2048, bottleneck_dim=netG.in_features).cuda()
+    inner_ln = network.feat_classifier(type='wn', class_num = netG.in_features, bottleneck_dim=2048).cuda()
+    targ_params = [{'params':inner_wn.parameters()}, {'params':inner_ln.parameters()}]
+    target_classifer = nn.Sequential(network.ResidualBlock([inner_wn, inner_ln]))
+    
+    if(args.source_classifier):
+        netF = nn.Sequential(netB, netC)
+        optimizer_f = optim.SGD(netF.parameters(), lr = args.lr * 0.5)
+    else:
+        final_fc = network.feat_classifier(type='linear', class_num = 256, bottleneck_dim=netG.in_features).cuda()
+        res_classifier = utils.ResClassifier(args.class_num, 256)
+        netF = nn.Sequential(final_fc, res_classifier)
+        optimizer_f = optim.SGD(netF.parameters(), lr = args.lr)
 
-    netF = nn.Sequential(target_classifer, netB, netC)#This is the new FC layer + old feature extractor + old classifier
-    #netF = nn.Sequential(target_classifer, res_classifier)
     optimizer_g = optim.SGD(netG.parameters(), lr = args.lr * 0.1)#Optimisers set here
-    optimizer_f = optim.SGD(netF.parameters(), lr = args.lr)
+    optimizer_targ = optim.SGD(targ_params, lr = args.lr)
 
-    whole_network = nn.Sequential(netG, netF)#This combines the base network and the added layers
+    whole_network = nn.Sequential(netG, target_classifer, netF)#This combines the base network and the added layers
     source_loader_iter = iter(dset_loaders["source"])
     target_loader_iter = iter(dset_loaders["target"])
 
@@ -395,13 +401,14 @@ def train(args, txt_src, txt_tgt):
         logits_u = torch.cat(logits[1:], dim=0)
 
         train_criterion = utils.SemiLoss()
-        label_smooth = CrossEntropyLabelSmooth(args.class_num)
-        Lx = label_smooth.forward(logits_x, mixed_target[:args.batch_size])
-        Lu = label_smooth.forward(logits_u, mixed_target[args.batch_size:])
-        w = utils.linear_rampup(iter_num, max_iter)
-
-        #Lx, Lu, w = train_criterion(logits_x, mixed_target[:args.batch_size], logits_u, mixed_target[args.batch_size:], 
-        #    iter_num, max_iter, args.lambda_u)
+        if(args.label_smooth):
+            label_smooth = CrossEntropyLabelSmooth(args.class_num)
+            Lx = label_smooth.forward(logits_x, mixed_target[:args.batch_size])
+            Lu = label_smooth.forward(logits_u, mixed_target[args.batch_size:])
+            w = utils.linear_rampup(iter_num, max_iter)
+        else:
+            Lx, Lu, w = train_criterion(logits_x, mixed_target[:args.batch_size], logits_u, mixed_target[args.batch_size:], 
+                iter_num, max_iter, args.lambda_u)
         loss = Lx + w * Lu
         """
         #Batch Nuclear Norm Maximisation
@@ -411,9 +418,11 @@ def train(args, txt_src, txt_tgt):
         """
         optimizer_g.zero_grad()
         optimizer_f.zero_grad()
+        optimizer_targ.zero_grad()
         loss.backward()
         optimizer_g.step()
         optimizer_f.step()
+        optimizer_targ.step()
 
         if iter_num % interval_iter == 0 or iter_num == max_iter:
             whole_network.eval()
@@ -483,6 +492,8 @@ if __name__ == "__main__":
     parser.add_argument('--issave', type=bool, default=False)
     parser.add_argument('--nolog', type=bool, default=False)#don't write to log file if True
     parser.add_argument('--augratio', type=float, default=0.0)#Ratio of original data to augmented data
+    parser.add_argument('--label_smooth', type=bool, default=True)#Whether or not to use label smoothing
+    parser.add_argument('--source_classifier', type=bool, default=True)#Whether or not to include the source classifier
 
     args = parser.parse_args()
 

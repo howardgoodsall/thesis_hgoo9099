@@ -30,8 +30,8 @@ gent:True
 model:target
 issave:False
 class_num:65
-t_dset_path:../data/OfficeHome_1.0/RealWorld_list.txt
-test_dset_path:../data/OfficeHome_1.0/RealWorld_list.txt
+t_dset_path:../data/OfficeHome_1.0/Real_World_train_list.txt
+test_dset_path:../data/OfficeHome_1.0/Real_World_test_list.txt
 name:AR
 output_dir:ckps/target/uda\OfficeHome_1.0\AR
 savename:par_0.3_ssl_0.6

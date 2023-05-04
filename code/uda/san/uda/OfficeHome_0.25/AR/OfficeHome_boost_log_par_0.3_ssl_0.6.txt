@@ -31,9 +31,11 @@ model:target
 issave:False
 nolog:False
 augratio:2.0
+label_smooth:True
+source_classifier:True
 class_num:65
-t_dset_path:../data/OfficeHome_0.25/Real_World_list.txt
-test_dset_path:../data/OfficeHome_0.25/Real_World_list.txt
+t_dset_path:../data/OfficeHome_0.25/Real_World_train_list.txt
+test_dset_path:../data/OfficeHome_0.25/Real_World_test_list.txt
 name:AR
 output_dir:ckps/target/uda\OfficeHome_0.25\AR
 savename:par_0.3_ssl_0.6
@@ -43,22 +45,22 @@ out_file:<_io.TextIOWrapper name='san\\uda\\OfficeHome_0.25\\AR\\OfficeHome_boos
 
 ==========================================
 
-Task: AR, Iter:0/0; Accuracy = 76.15%; Mean Ent = 0.1239
+Task: AR, Iter:0/0; Accuracy = 75.32%; Mean Ent = 0.1277
 Task: 0.76
-Task: AR, Iter:261/2610; Accuracy = 70.70%; Mean Ent = 0.4938
-Task: AR, Iter:522/2610; Accuracy = 72.96%; Mean Ent = 0.4613
-Task: AR, Iter:783/2610; Accuracy = 73.33%; Mean Ent = 0.4247
-Task: AR, Iter:1044/2610; Accuracy = 73.43%; Mean Ent = 0.4028
-Task: AR, Iter:1305/2610; Accuracy = 74.18%; Mean Ent = 0.3590
-Task: AR, Iter:1566/2610; Accuracy = 74.18%; Mean Ent = 0.3327
-Task: AR, Iter:1827/2610; Accuracy = 74.37%; Mean Ent = 0.3345
-Task: AR, Iter:2088/2610; Accuracy = 74.08%; Mean Ent = 0.2902
-Task: AR, Iter:2349/2610; Accuracy = 73.99%; Mean Ent = 0.2650
-Task: AR, Iter:2610/2610; Accuracy = 74.46%; Mean Ent = 0.2769
+Task: AR, Iter:231/2310; Accuracy = 65.53%; Mean Ent = 1.0997
+Task: AR, Iter:462/2310; Accuracy = 69.48%; Mean Ent = 1.0877
+Task: AR, Iter:693/2310; Accuracy = 70.03%; Mean Ent = 0.9691
+Task: AR, Iter:924/2310; Accuracy = 69.50%; Mean Ent = 1.0226
+Task: AR, Iter:1155/2310; Accuracy = 69.55%; Mean Ent = 1.0183
+Task: AR, Iter:1386/2310; Accuracy = 71.22%; Mean Ent = 0.9565
+Task: AR, Iter:1617/2310; Accuracy = 70.16%; Mean Ent = 1.0173
+Task: AR, Iter:1848/2310; Accuracy = 71.55%; Mean Ent = 1.0563
+Task: AR, Iter:2079/2310; Accuracy = 70.77%; Mean Ent = 1.1449
+Task: AR, Iter:2310/2310; Accuracy = 71.53%; Mean Ent = 1.0388
 
 ==========================================
 
-Val Acc = 73.99
-Max Acc = 74.46
-Fin Acc = 74.46
+Val Acc = 71.22
+Max Acc = 71.55
+Fin Acc = 71.53
 

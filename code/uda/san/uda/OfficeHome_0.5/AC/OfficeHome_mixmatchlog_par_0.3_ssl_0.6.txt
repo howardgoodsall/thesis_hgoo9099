@@ -30,8 +30,8 @@ gent:True
 model:target
 issave:False
 class_num:65
-t_dset_path:../data/OfficeHome_0.5/Clipart_list.txt
-test_dset_path:../data/OfficeHome_0.5/Clipart_list.txt
+t_dset_path:../data/OfficeHome_0.5/Clipart_train_list.txt
+test_dset_path:../data/OfficeHome_0.5/Clipart_test_list.txt
 name:AC
 output_dir:ckps/target/uda\OfficeHome_0.5\AC
 savename:par_0.3_ssl_0.6
@@ -41,23 +41,23 @@ out_file:<_io.TextIOWrapper name='san\\uda\\OfficeHome_0.5\\AC\\OfficeHome_mixma
 
 ==========================================
 
-Task: AC, Iter:0/0; Accuracy = 59.58%; Mean Ent = 0.1180
+Task: AC, Iter:0/0; Accuracy = 59.53%; Mean Ent = 0.1195
 Task: 0.76
-Task: AC, Iter:481/4815; Accuracy = 56.21%; Mean Ent = 0.8418
-Task: AC, Iter:962/4815; Accuracy = 57.27%; Mean Ent = 0.5312
-Task: AC, Iter:1443/4815; Accuracy = 58.11%; Mean Ent = 0.4308
-Task: AC, Iter:1924/4815; Accuracy = 58.48%; Mean Ent = 0.3571
-Task: AC, Iter:2405/4815; Accuracy = 59.03%; Mean Ent = 0.3337
-Task: AC, Iter:2886/4815; Accuracy = 59.40%; Mean Ent = 0.3111
-Task: AC, Iter:3367/4815; Accuracy = 59.68%; Mean Ent = 0.2830
-Task: AC, Iter:3848/4815; Accuracy = 59.26%; Mean Ent = 0.2452
-Task: AC, Iter:4329/4815; Accuracy = 59.63%; Mean Ent = 0.2766
-Task: AC, Iter:4810/4815; Accuracy = 59.26%; Mean Ent = 0.2681
-Task: AC, Iter:4815/4815; Accuracy = 59.12%; Mean Ent = 0.2486
+Task: AC, Iter:427/4275; Accuracy = 49.76%; Mean Ent = 0.8242
+Task: AC, Iter:854/4275; Accuracy = 51.02%; Mean Ent = 0.7012
+Task: AC, Iter:1281/4275; Accuracy = 52.19%; Mean Ent = 0.6237
+Task: AC, Iter:1708/4275; Accuracy = 54.26%; Mean Ent = 0.6204
+Task: AC, Iter:2135/4275; Accuracy = 54.23%; Mean Ent = 0.5845
+Task: AC, Iter:2562/4275; Accuracy = 54.81%; Mean Ent = 0.6368
+Task: AC, Iter:2989/4275; Accuracy = 55.34%; Mean Ent = 0.6186
+Task: AC, Iter:3416/4275; Accuracy = 55.52%; Mean Ent = 0.6525
+Task: AC, Iter:3843/4275; Accuracy = 54.33%; Mean Ent = 0.6561
+Task: AC, Iter:4270/4275; Accuracy = 54.89%; Mean Ent = 0.5989
+Task: AC, Iter:4275/4275; Accuracy = 54.54%; Mean Ent = 0.6345
 
 ==========================================
 
-Val Acc = 59.26
-Max Acc = 59.68
-Fin Acc = 59.12
+Val Acc = 54.23
+Max Acc = 55.52
+Fin Acc = 54.54
 

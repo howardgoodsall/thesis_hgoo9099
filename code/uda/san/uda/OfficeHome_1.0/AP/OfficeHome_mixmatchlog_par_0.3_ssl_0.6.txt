@@ -30,8 +30,8 @@ gent:True
 model:target
 issave:False
 class_num:65
-t_dset_path:../data/OfficeHome_1.0/Product_list.txt
-test_dset_path:../data/OfficeHome_1.0/Product_list.txt
+t_dset_path:../data/OfficeHome_1.0/Product_train_list.txt
+test_dset_path:../data/OfficeHome_1.0/Product_test_list.txt
 name:AP
 output_dir:ckps/target/uda\OfficeHome_1.0\AP
 savename:par_0.3_ssl_0.6
@@ -41,23 +41,23 @@ out_file:<_io.TextIOWrapper name='san\\uda\\OfficeHome_1.0\\AP\\OfficeHome_mixma
 
 ==========================================
 
-Task: AP, Iter:0/0; Accuracy = 77.02%; Mean Ent = 0.0852
+Task: AP, Iter:0/0; Accuracy = 76.95%; Mean Ent = 0.0842
 Task: 0.78
-Task: AP, Iter:1033/10335; Accuracy = 74.39%; Mean Ent = 0.4092
-Task: AP, Iter:2066/10335; Accuracy = 76.71%; Mean Ent = 0.2884
-Task: AP, Iter:3099/10335; Accuracy = 76.23%; Mean Ent = 0.3438
-Task: AP, Iter:4132/10335; Accuracy = 77.38%; Mean Ent = 0.2650
-Task: AP, Iter:5165/10335; Accuracy = 77.07%; Mean Ent = 0.3113
-Task: AP, Iter:6198/10335; Accuracy = 77.36%; Mean Ent = 0.2463
-Task: AP, Iter:7231/10335; Accuracy = 77.68%; Mean Ent = 0.2493
-Task: AP, Iter:8264/10335; Accuracy = 77.88%; Mean Ent = 0.2738
-Task: AP, Iter:9297/10335; Accuracy = 77.86%; Mean Ent = 0.2195
-Task: AP, Iter:10330/10335; Accuracy = 78.08%; Mean Ent = 0.2175
-Task: AP, Iter:10335/10335; Accuracy = 77.86%; Mean Ent = 0.2066
+Task: AP, Iter:925/9255; Accuracy = 73.95%; Mean Ent = 0.4409
+Task: AP, Iter:1850/9255; Accuracy = 76.53%; Mean Ent = 0.3318
+Task: AP, Iter:2775/9255; Accuracy = 77.23%; Mean Ent = 0.2761
+Task: AP, Iter:3700/9255; Accuracy = 77.18%; Mean Ent = 0.2998
+Task: AP, Iter:4625/9255; Accuracy = 77.50%; Mean Ent = 0.2828
+Task: AP, Iter:5550/9255; Accuracy = 77.58%; Mean Ent = 0.2577
+Task: AP, Iter:6475/9255; Accuracy = 77.85%; Mean Ent = 0.2828
+Task: AP, Iter:7400/9255; Accuracy = 77.73%; Mean Ent = 0.2715
+Task: AP, Iter:8325/9255; Accuracy = 77.60%; Mean Ent = 0.2357
+Task: AP, Iter:9250/9255; Accuracy = 77.70%; Mean Ent = 0.2420
+Task: AP, Iter:9255/9255; Accuracy = 78.00%; Mean Ent = 0.2436
 
 ==========================================
 
-Val Acc = 77.86
-Max Acc = 78.08
-Fin Acc = 77.86
+Val Acc = 77.60
+Max Acc = 78.00
+Fin Acc = 78.00
 
