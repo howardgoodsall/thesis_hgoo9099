@@ -76,6 +76,39 @@ class ImageList(Dataset):
 
     def __len__(self):
         return len(self.imgs)
+    
+class ImageListAugmentLabelled(Dataset):
+    def __init__(self, ratio, image_list, labels=None, transform=None, transform_augment=None, mode='RGB'):
+        imgs, last_index = make_dataset_augment(image_list, labels, ratio)
+        self.ratio = ratio
+        self.last_index = last_index
+        if len(imgs) == 0:
+            raise(RuntimeError("Found 0 images in subfolders of: " + root + "\n"
+                               "Supported image extensions are: " + ",".join(IMG_EXTENSIONS)))
+
+        self.imgs = imgs
+        self.transform = transform
+        self.transform_augment = transform_augment
+        if mode == 'RGB':
+            self.loader = rgb_loader
+        elif mode == 'L':
+            self.loader = l_loader
+
+    def __getitem__(self, index):
+        if(index >= self.last_index):
+            orig_index = random.randint(0, self.last_index-1)
+            path, target = self.imgs[orig_index]
+            img = self.loader(path)
+            img = self.transform_augment(img)
+        else:
+            path, target = self.imgs[index]
+            img = self.loader(path)
+            if self.transform is not None:
+                img = self.transform(img)
+        return img, target
+
+    def __len__(self):
+        return len(self.imgs)+int(self.ratio*len(self.imgs))
 
 
 class ImageListAugment(Dataset):

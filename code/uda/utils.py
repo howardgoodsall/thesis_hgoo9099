@@ -375,12 +375,13 @@ def cal_acc_visda(loader, model, flag=True, fc=None):
     return aacc, predict, all_output, all_label, acc
 
 
-def linear_rampup(current, rampup_length):
+def linear_rampup(current, rampup_length, modifier=0.0):
     if rampup_length == 0:
         return 1.0
     else:
-        current = np.clip(current / rampup_length, 0.0, 1.0)
-        return float(current)
+        current = float(np.clip(current / rampup_length, 0.0, 1.0))
+        current += modifier
+        return current
 
 class SemiLoss(object):
     def __call__(self, outputs_x, targets_x, outputs_u, targets_u, epoch, max_epochs=30, lambda_u=75):

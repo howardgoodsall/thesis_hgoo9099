@@ -1,0 +1,69 @@
+image_boost.py --gpu_id 0 --seed 2021 --dset OfficeHome_0.25 --max_epoch 30 --s 3 --output_tar ckps/target/ --ssl 0.6 --ps 0.0 --augratio 2.5 --blur True --aug_severity 3 --batch_norm True --source_classifier False --lr 1e-3==========================================
+==========       config      =============
+==========================================
+gpu_id:0
+s:3
+t:0
+output:san
+output_tar:ckps/target/
+seed:2021
+max_epoch:30
+batch_size:5
+worker:4
+bottleneck_dim:256
+net:resnet50
+dset:OfficeHome_0.25
+lr:0.001
+alpha:0.75
+lambda_u:100
+T:0.5
+da:uda
+cls_par:0.3
+threshold:0
+ssl:0.6
+ps:0.0
+choice:ent
+layer:wn
+classifier:bn
+bottleneck:256
+gent:True
+model:target
+issave:False
+nolog:False
+augratio:2.5
+label_smooth:True
+source_classifier:True
+batch_norm:True
+aug_severity:3
+blur:True
+class_num:65
+t_dset_path:../data/OfficeHome_0.25/Art_train_list.txt
+test_dset_path:../data/OfficeHome_0.25/Art_test_list.txt
+name:RA
+output_dir:ckps/target/uda\OfficeHome_0.25\RA
+savename:par_0.3_ssl_0.6
+log:ps_0.0_par_0.3_ssl_0.6
+mm_dir:san\uda\OfficeHome_0.25\RA
+out_file:<_io.TextIOWrapper name='san\\uda\\OfficeHome_0.25\\RA\\OfficeHome_boost_log_par_0.3_ssl_0.6.txt' mode='w' encoding='cp1252'>
+
+==========================================
+
+Task: RA, Iter:0/0; Accuracy = 71.65%; Mean Ent = 0.2016
+Task: 0.71
+Task: RA, Iter:384/3840; Accuracy = 61.43%; Mean Ent = 1.8393
+Task: RA, Iter:768/3840; Accuracy = 63.92%; Mean Ent = 1.6175
+Task: RA, Iter:1152/3840; Accuracy = 64.37%; Mean Ent = 1.4263
+Task: RA, Iter:1536/3840; Accuracy = 64.96%; Mean Ent = 1.4998
+Task: RA, Iter:1920/3840; Accuracy = 64.42%; Mean Ent = 1.5063
+Task: RA, Iter:2304/3840; Accuracy = 65.05%; Mean Ent = 1.4907
+Task: RA, Iter:2688/3840; Accuracy = 65.14%; Mean Ent = 1.4334
+Task: RA, Iter:3072/3840; Accuracy = 64.83%; Mean Ent = 1.3538
+Task: RA, Iter:3456/3840; Accuracy = 65.10%; Mean Ent = 1.3563
+Task: RA, Iter:3840/3840; Accuracy = 64.92%; Mean Ent = 1.4699
+
+==========================================
+
+Val Acc = 64.83
+Max Acc = 65.14
+Fin Acc = 64.92
+

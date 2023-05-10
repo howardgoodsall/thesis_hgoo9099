@@ -21,7 +21,7 @@ import copy
 import torch.nn.functional as F
 from scipy.spatial.distance import cdist
 import network
-from data_list import ImageList, ImageList_twice, ImageListAugment
+from data_list import ImageList, ImageList_twice, ImageListAugment, ImageListAugmentLabelled
 from sklearn.metrics import confusion_matrix
 
 #from torchsummary import summary
@@ -137,6 +137,8 @@ def split_target(args):
     else:
         PS = args.ps
 
+    
+
     if args.choice == "ent":
         value = mean_ent
     elif args.choice == "maxp":
@@ -190,15 +192,23 @@ def data_load(args, txt_src, txt_tgt):
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-    train_augment = torchvision.transforms.Compose([
-        torchvision.transforms.Resize((256, 256)),
-        torchvision.transforms.RandomCrop(224),
-        torchvision.transforms.AugMix(severity=3),#Data Augmentations
-        #torchvision.transforms.GaussianBlur(kernel_size=(5, 9)),
-        torchvision.transforms.RandomHorizontalFlip(),
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
+    if(args.blur):
+        train_augment = torchvision.transforms.Compose([
+            torchvision.transforms.Resize((256, 256)),
+            torchvision.transforms.CenterCrop(224),
+            torchvision.transforms.AugMix(severity=args.aug_severity),#Data Augmentations
+            torchvision.transforms.GaussianBlur(kernel_size=(5, 9)),
+            torchvision.transforms.RandomHorizontalFlip(),
+            torchvision.transforms.ToTensor()
+        ])
+    else:
+        train_augment = torchvision.transforms.Compose([
+            torchvision.transforms.Resize((256, 256)),
+            torchvision.transforms.CenterCrop(224),
+            torchvision.transforms.AugMix(severity=args.aug_severity),#Data Augmentations
+            torchvision.transforms.RandomHorizontalFlip(),
+            torchvision.transforms.ToTensor()
+        ])
     
     test_transform = torchvision.transforms.Compose([
         torchvision.transforms.Resize((256, 256)),
@@ -206,12 +216,21 @@ def data_load(args, txt_src, txt_tgt):
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
+    
+    #aug_label_ratio = args.augratio * 0.3
+    #aug_unlabel_ratio = args.augratio * 0.7
 
     dsets = {}
-    #if args.model == "source":
-    dsets["source"] = ImageList(txt_src, transform=train_transform)
-    
+    #Labelled data
     if args.augratio != 0.0:
+        #dsets["source"] = ImageListAugmentLabelled(aug_label_ratio, txt_src, transform=train_transform, transform_augment=train_augment)
+        dsets["source"] = ImageList(txt_src, transform=train_transform)
+    else:
+        dsets["source"] = ImageList(txt_src, transform=train_transform)
+
+    #Unlabelled data
+    if args.augratio != 0.0:
+        #dsets["target"] = ImageListAugment(aug_unlabel_ratio, txt_tgt, transform=[train_transform, train_transform], transform_augment=train_augment)
         dsets["target"] = ImageListAugment(args.augratio, txt_tgt, transform=[train_transform, train_transform], transform_augment=train_augment)
     else:
         dsets["target"] = ImageList_twice(txt_tgt, transform=[train_transform, train_transform])
@@ -305,15 +324,21 @@ def train(args, txt_src, txt_tgt):
     if len(args.gpu_id.split(',')) > 1:
         netG = nn.DataParallel(netG)
 
-    #New Fully Connected Layer
+    #Target Classifier
     inner_wn = network.feat_classifier(type='wn', class_num = 2048, bottleneck_dim=netG.in_features).cuda()
-    inner_ln = network.feat_classifier(type='wn', class_num = netG.in_features, bottleneck_dim=2048).cuda()
+    inner_ln = network.feat_classifier(type='linear', class_num = netG.in_features, bottleneck_dim=2048).cuda()
     targ_params = [{'params':inner_wn.parameters()}, {'params':inner_ln.parameters()}]
-    target_classifer = nn.Sequential(network.ResidualBlock([inner_wn, inner_ln]))
+
+    if(args.batch_norm):
+        boost_bn = nn.BatchNorm1d(netG.in_features).cuda()
+        target_classifer = nn.Sequential(boost_bn, network.ResidualBlock([inner_wn, inner_ln]))
+    else:
+        target_classifer = nn.Sequential(network.ResidualBlock([inner_wn, inner_ln]))
     
-    if(args.source_classifier):
+    
+    if(args.source_classifier):#This is the default
         netF = nn.Sequential(netB, netC)
-        optimizer_f = optim.SGD(netF.parameters(), lr = args.lr * 0.5)
+        optimizer_f = optim.SGD(netF.parameters(), lr = args.lr)
     else:
         final_fc = network.feat_classifier(type='linear', class_num = 256, bottleneck_dim=netG.in_features).cuda()
         res_classifier = utils.ResClassifier(args.class_num, 256)
@@ -324,8 +349,8 @@ def train(args, txt_src, txt_tgt):
     optimizer_targ = optim.SGD(targ_params, lr = args.lr)
 
     whole_network = nn.Sequential(netG, target_classifer, netF)#This combines the base network and the added layers
-    source_loader_iter = iter(dset_loaders["source"])
-    target_loader_iter = iter(dset_loaders["target"])
+    source_loader_iter = iter(dset_loaders["source"])#Labelled
+    target_loader_iter = iter(dset_loaders["target"])#Unlabelled
 
     list_acc = []
     best_ent = 100
@@ -338,6 +363,7 @@ def train(args, txt_src, txt_tgt):
 
         lr_scheduler(optimizer_g, init_lr=args.lr * 0.1, iter_num=iter_num, max_iter=max_iter)
         lr_scheduler(optimizer_f, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
+        lr_scheduler(optimizer_targ, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
 
         try:
             inputs_source, labels_source = next(source_loader_iter)
@@ -400,13 +426,13 @@ def train(args, txt_src, txt_tgt):
         logits_x = logits[0]
         logits_u = torch.cat(logits[1:], dim=0)
 
-        train_criterion = utils.SemiLoss()
         if(args.label_smooth):
             label_smooth = CrossEntropyLabelSmooth(args.class_num)
             Lx = label_smooth.forward(logits_x, mixed_target[:args.batch_size])
             Lu = label_smooth.forward(logits_u, mixed_target[args.batch_size:])
-            w = utils.linear_rampup(iter_num, max_iter)
+            w = utils.linear_rampup(iter_num, max_iter, 0.1)
         else:
+            train_criterion = utils.SemiLoss()
             Lx, Lu, w = train_criterion(logits_x, mixed_target[:args.batch_size], logits_u, mixed_target[args.batch_size:], 
                 iter_num, max_iter, args.lambda_u)
         loss = Lx + w * Lu
@@ -494,6 +520,9 @@ if __name__ == "__main__":
     parser.add_argument('--augratio', type=float, default=0.0)#Ratio of original data to augmented data
     parser.add_argument('--label_smooth', type=bool, default=True)#Whether or not to use label smoothing
     parser.add_argument('--source_classifier', type=bool, default=True)#Whether or not to include the source classifier
+    parser.add_argument('--batch_norm', type=bool, default=True)#Whether or not to use Batch Normalisation before target classifier
+    parser.add_argument('--aug_severity', type=int, default=3)#Severity for augmentations
+    parser.add_argument('--blur', type=bool, default=False)#Whether or not to use Guassian blur for augmentations
 
     args = parser.parse_args()
 
