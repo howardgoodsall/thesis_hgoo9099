@@ -318,8 +318,6 @@ def train(args, txt_src, txt_tgt):
         netG.load_state_dict(torch.load(modelpath))
         modelpath = args.output_dir + "/target_B_" + args.savename + ".pt"   
         netB.load_state_dict(torch.load(modelpath)) 
-        #Copy weights from old feature extractor to new fc layer
-        #new_layer.load_state_dict(torch.load(modelpath))
         
     if len(args.gpu_id.split(',')) > 1:
         netG = nn.DataParallel(netG)
@@ -522,7 +520,7 @@ if __name__ == "__main__":
     parser.add_argument('--source_classifier', type=bool, default=True)#Whether or not to include the source classifier
     parser.add_argument('--batch_norm', type=bool, default=True)#Whether or not to use Batch Normalisation before target classifier
     parser.add_argument('--aug_severity', type=int, default=3)#Severity for augmentations
-    parser.add_argument('--blur', type=bool, default=False)#Whether or not to use Guassian blur for augmentations
+    parser.add_argument('--blur', type=bool, default=True)#Whether or not to use Guassian blur for augmentations
 
     args = parser.parse_args()
 

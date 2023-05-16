@@ -1,0 +1,70 @@
+image_boost_invariant.py --gpu_id 0 --seed 2021 --dset office_0.25 --max_epoch 15 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --ps 0.0 --augratio 2.0==========================================
+==========       config      =============
+==========================================
+gpu_id:0
+s:0
+t:1
+output:san
+output_tar:ckps/target/
+seed:2021
+max_epoch:15
+batch_size:5
+worker:4
+bottleneck_dim:256
+net:resnet50
+dset:office_0.25
+lr:0.01
+alpha:0.75
+lambda_u:100
+T:0.5
+da:uda
+cls_par:0.3
+threshold:0
+ssl:0.6
+ps:0.0
+choice:ent
+layer:wn
+classifier:bn
+bottleneck:256
+gent:True
+model:target
+issave:False
+nolog:False
+augratio:2.0
+label_smooth:True
+source_classifier:True
+batch_norm:True
+aug_severity:3
+blur:False
+class_num:31
+t_dset_path:../data/office_0.25/dslr_train_list.txt
+test_dset_path:../data/office_0.25/dslr_test_list.txt
+name:AD
+output_dir:ckps/target/uda\office_0.25\AD
+src_dir:san\uda\office_1.0\A
+savename:par_0.3_ssl_0.6
+log:ps_0.0_par_0.3_ssl_0.6
+mm_dir:san\uda\office_0.25\AD
+out_file:<_io.TextIOWrapper name='san\\uda\\office_0.25\\AD\\office_boost_invariant_log_par_0.3_ssl_0.6.txt' mode='w' encoding='cp1252'>
+
+==========================================
+
+Task: AD, Iter:0/0; Accuracy = 85.44%; Mean Ent = 0.4078
+Task: 0.78
+Task: AD, Iter:33/330; Accuracy = 76.92%; Mean Ent = 1.3812
+Task: AD, Iter:66/330; Accuracy = 76.92%; Mean Ent = 1.2015
+Task: AD, Iter:99/330; Accuracy = 82.05%; Mean Ent = 1.1011
+Task: AD, Iter:132/330; Accuracy = 74.36%; Mean Ent = 1.1169
+Task: AD, Iter:165/330; Accuracy = 82.05%; Mean Ent = 0.8233
+Task: AD, Iter:198/330; Accuracy = 79.49%; Mean Ent = 0.8152
+Task: AD, Iter:231/330; Accuracy = 82.05%; Mean Ent = 0.9578
+Task: AD, Iter:264/330; Accuracy = 87.18%; Mean Ent = 0.9122
+Task: AD, Iter:297/330; Accuracy = 82.05%; Mean Ent = 1.0204
+Task: AD, Iter:330/330; Accuracy = 89.74%; Mean Ent = 0.9457
+
+==========================================
+
+Val Acc = 79.49
+Max Acc = 89.74
+Fin Acc = 89.74
+

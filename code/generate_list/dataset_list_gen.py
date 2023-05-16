@@ -17,7 +17,7 @@ if(scale_factor >1 or scale_factor<0):
 #Replace with path to location of dataset
 # ---
 # ---
-folder = r"C:\Users\Howard\Desktop\Honours\thesis_hgoo9099\code\datasets\OfficeHome"
+folder = r"C:\Users\Howard\Desktop\Honours\thesis_hgoo9099\code\datasets\office"
 # ---
 # ---
 
@@ -43,7 +43,7 @@ for d in range(len(domains)):
 	dom = domains[d]
 	if os.path.isdir(os.path.join(folder, dom)):
 		dom_new = dom.replace(" ","_")
-		os.rename(os.path.join(folder, dom), os.path.join(folder, dom_new))
+		#os.rename(os.path.join(folder, dom), os.path.join(folder, dom_new))
 
 		classes = os.listdir(os.path.join(folder, dom_new))
 		classes.sort()
@@ -54,10 +54,10 @@ for d in range(len(domains)):
 		for c in range(len(classes)):
 			cla = classes[c]
 			cla_new = cla.replace(" ","_")
-			os.rename(os.path.join(folder, dom_new, cla), os.path.join(folder, dom_new, cla_new))
+			#os.rename(os.path.join(folder, dom_new, cla), os.path.join(folder, dom_new, cla_new))
 			files = os.listdir(os.path.join(folder, dom_new, cla_new))
-			train_files = files[:int(len(files)*0.9)]#Default train test split is 9:1
-			test_files = files[int(len(files)*0.1):]
+			train_files = files[-(int(len(files)*0.9)+1):]#Default train test split is 9:1
+			test_files = files[:int(len(files)*0.1)]
 			train_files = train_files[:int(len(train_files)*scale_factor)]#Further reduce train files by scale factor
 			print(cla_new + ": Total: " + str(len(files)) + " Train: " + str(len(train_files)) + " Test: " + str(len(test_files)))
 			files.sort()#order that files are read by os is random

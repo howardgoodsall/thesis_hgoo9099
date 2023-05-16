@@ -315,7 +315,6 @@ def train(args, txt_src, txt_tgt):
 
     #Target Classifier - partially trained from step 2
     modelpath = args.output_dir + "/target_B_" + args.savename + ".pt"
-    print(modelpath)
     target_classifier_bn.load_state_dict(torch.load(modelpath))
 
     #Source Classifier - trained from step 1
@@ -341,7 +340,8 @@ def train(args, txt_src, txt_tgt):
     
     final_fc = network.feat_classifier(type='linear', class_num = 256, bottleneck_dim=args.bottleneck).cuda()
     res_classifier = utils.ResClassifier(args.class_num, 256).cuda()
-    target_classifier = nn.Sequential(target_classifier_bn, final_fc, res_classifier)
+    #target_classifier = nn.Sequential(target_classifier_bn, final_fc, res_classifier)
+    target_classifier = nn.Sequential(target_classifier_bn, netC)
     
     
     optimizer_g = optim.SGD(netG.parameters(), lr = args.lr * 0.1)#Optimisers set here
@@ -397,8 +397,9 @@ def train(args, txt_src, txt_tgt):
             
             outputs_u = network_tar(inputs_t)
             outputs_u2 = network_tar(inputs_t2)
-            p = (torch.softmax(outputs_u, dim=1)[0] + torch.softmax(outputs_u2, dim=1)[0]) / 2
+            p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
             pt = p**(1/args.T)
+            #print(pt.shape)
             targets_u = pt / pt.sum(dim=1, keepdim=True)
             targets_u = targets_u.detach()
 
@@ -467,13 +468,11 @@ def train(args, txt_src, txt_tgt):
                 iter_num, max_iter, args.lambda_u)
             loss_src = Lx_src + w_src * Lu_src
 
-        print("Target Loss " + str(loss_tar) + "\n" + str(loss_src.detach().numpy()))
-        print("Source Loss " + str(loss_src) + "\n" + str(loss_tar.detach().numpy()))
-
-        if(loss_tar.detach().numpy() > loss_src.detach().numpy()):
+        if(loss_tar.detach().cpu().numpy() > loss_src.detach().cpu().numpy()):
             loss = loss_tar+loss_src
         else:
             loss = loss_tar
+        #loss = loss_tar+loss_src
 
         optimizer_g.zero_grad()
         optimizer_src.zero_grad()
