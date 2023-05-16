@@ -1,0 +1,71 @@
+image_boost_invariant.py --gpu_id 0 --seed 2021 --dset office_0.25 --max_epoch 15 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --ps 0.0 --augratio 2.0==========================================
+==========       config      =============
+==========================================
+gpu_id:0
+s:0
+t:2
+output:san
+output_tar:ckps/target/
+seed:2021
+max_epoch:15
+batch_size:5
+worker:4
+bottleneck_dim:256
+net:resnet50
+dset:office_0.25
+lr:0.01
+alpha:0.75
+lambda_u:100
+T:0.5
+da:uda
+cls_par:0.3
+threshold:0
+ssl:0.6
+ps:0.0
+choice:ent
+layer:wn
+classifier:bn
+bottleneck:256
+gent:True
+model:target
+issave:False
+nolog:False
+augratio:2.0
+label_smooth:True
+source_classifier:True
+batch_norm:True
+aug_severity:3
+blur:False
+class_num:31
+t_dset_path:../data/office_0.25/webcam_train_list.txt
+test_dset_path:../data/office_0.25/webcam_test_list.txt
+name:AW
+output_dir:ckps/target/uda\office_0.25\AW
+src_dir:san\uda\office_1.0\A
+savename:par_0.3_ssl_0.6
+log:ps_0.0_par_0.3_ssl_0.6
+mm_dir:san\uda\office_0.25\AW
+out_file:<_io.TextIOWrapper name='san\\uda\\office_0.25\\AW\\office_boost_invariant_log_par_0.3_ssl_0.6.txt' mode='w' encoding='cp1252'>
+
+==========================================
+
+Task: AW, Iter:0/0; Accuracy = 90.06%; Mean Ent = 0.3233
+Task: 0.78
+Task: AW, Iter:46/465; Accuracy = 82.35%; Mean Ent = 1.0438
+Task: AW, Iter:92/465; Accuracy = 85.29%; Mean Ent = 0.8374
+Task: AW, Iter:138/465; Accuracy = 89.71%; Mean Ent = 0.5951
+Task: AW, Iter:184/465; Accuracy = 91.18%; Mean Ent = 0.5831
+Task: AW, Iter:230/465; Accuracy = 92.65%; Mean Ent = 0.5820
+Task: AW, Iter:276/465; Accuracy = 92.65%; Mean Ent = 0.5569
+Task: AW, Iter:322/465; Accuracy = 91.18%; Mean Ent = 0.4303
+Task: AW, Iter:368/465; Accuracy = 94.12%; Mean Ent = 0.5187
+Task: AW, Iter:414/465; Accuracy = 92.65%; Mean Ent = 0.4790
+Task: AW, Iter:460/465; Accuracy = 94.12%; Mean Ent = 0.4742
+Task: AW, Iter:465/465; Accuracy = 91.18%; Mean Ent = 0.5369
+
+==========================================
+
+Val Acc = 91.18
+Max Acc = 94.12
+Fin Acc = 91.18
+

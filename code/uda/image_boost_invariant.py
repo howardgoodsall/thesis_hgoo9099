@@ -305,48 +305,55 @@ def train(args, txt_src, txt_tgt):
 
     
 
-    netB = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=args.bottleneck).cuda()#feature_dim -> in?, bottleneck_dim -> out
+    source_classifier_bn = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=args.bottleneck).cuda()#feature_dim -> in?, bottleneck_dim -> out
+    target_classifier_bn = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=args.bottleneck).cuda()#feature_dim -> in?, bottleneck_dim -> out
     netC = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()#bottleneck_dim -> in, class_num -> out
 
-    if args.model == "source":
-        modelpath = args.output_dir + "/source_F.pt" 
-        netG.load_state_dict(torch.load(modelpath))
-        modelpath = args.output_dir + "/source_B.pt"   
-        netB.load_state_dict(torch.load(modelpath))
-    else:    
-        modelpath = args.output_dir + "/target_F_" + args.savename + ".pt" 
-        netG.load_state_dict(torch.load(modelpath))
-        modelpath = args.output_dir + "/target_B_" + args.savename + ".pt"   
-        netB.load_state_dict(torch.load(modelpath)) 
-        
+    #Base Classifier - partially trained from step 2
+    modelpath = args.output_dir + "/target_F_" + args.savename + ".pt"
+    netG.load_state_dict(torch.load(modelpath))
+
+    #Target Classifier - partially trained from step 2
+    modelpath = args.output_dir + "/target_B_" + args.savename + ".pt"
+    target_classifier_bn.load_state_dict(torch.load(modelpath))
+
+    #Source Classifier - trained from step 1
+    modelpath = args.src_dir + "/source_B.pt"
+    source_classifier_bn.load_state_dict(torch.load(modelpath))
+    source_classifier = nn.Sequential(source_classifier_bn, netC)
+    
+
     if len(args.gpu_id.split(',')) > 1:
         netG = nn.DataParallel(netG)
 
-    #Target Classifier
+    #Target Adapter (previously called target classifier)
     inner_wn = network.feat_classifier(type='wn', class_num = 2048, bottleneck_dim=netG.in_features).cuda()
     inner_ln = network.feat_classifier(type='linear', class_num = netG.in_features, bottleneck_dim=2048).cuda()
     targ_params = [{'params':inner_wn.parameters()}, {'params':inner_ln.parameters()}]
 
     if(args.batch_norm):
         boost_bn = nn.BatchNorm1d(netG.in_features).cuda()
-        target_classifer = nn.Sequential(boost_bn, network.ResidualBlock([inner_wn, inner_ln]))
+        target_adapter = nn.Sequential(boost_bn, network.ResidualBlock([inner_wn, inner_ln]))
     else:
-        target_classifer = nn.Sequential(network.ResidualBlock([inner_wn, inner_ln]))
+        target_adapter = nn.Sequential(network.ResidualBlock([inner_wn, inner_ln]))
     
     
-    if(args.source_classifier):#This is the default
-        netF = nn.Sequential(netB, netC)
-        optimizer_f = optim.SGD(netF.parameters(), lr = args.lr)
-    else:
-        final_fc = network.feat_classifier(type='linear', class_num = 256, bottleneck_dim=netG.in_features).cuda()
-        res_classifier = utils.ResClassifier(args.class_num, 256)
-        netF = nn.Sequential(final_fc, res_classifier)
-        optimizer_f = optim.SGD(netF.parameters(), lr = args.lr)
-
+    final_fc = network.feat_classifier(type='linear', class_num = 256, bottleneck_dim=args.bottleneck).cuda()
+    res_classifier = utils.ResClassifier(args.class_num, 256).cuda()
+    #target_classifier = nn.Sequential(target_classifier_bn, final_fc, res_classifier)
+    target_classifier = nn.Sequential(target_classifier_bn, netC)
+    
+    
     optimizer_g = optim.SGD(netG.parameters(), lr = args.lr * 0.1)#Optimisers set here
-    optimizer_targ = optim.SGD(targ_params, lr = args.lr)
+    optimizer_targ_adap = optim.SGD(targ_params, lr = args.lr)
+    optimizer_src = optim.SGD(source_classifier.parameters(), lr = args.lr)
+    optimizer_tar = optim.SGD(target_classifier.parameters(), lr = args.lr)
 
-    whole_network = nn.Sequential(netG, target_classifer, netF)#This combines the base network and the added layers
+    #G->base
+    #target adapter->ResNet block
+    #source classifier -> classifier trained in step 1
+    #target classifier -> classifier trained in step 2
+    feature_extractor = nn.Sequential(netG, target_adapter)#This combines the base network and the added layers
     source_loader_iter = iter(dset_loaders["source"])#Labelled
     target_loader_iter = iter(dset_loaders["target"])#Unlabelled
 
@@ -354,14 +361,19 @@ def train(args, txt_src, txt_tgt):
     best_ent = 100
 
     for iter_num in range(1, max_iter + 1):
-        whole_network.train()
+        feature_extractor.train()
+        target_classifier.train()
+        source_classifier.train()
+        network_tar = nn.Sequential(feature_extractor, target_classifier)
+        network_tar.train()
 
         #summary(whole_network, input_size=(3, 256, 256))
         #sys.exit(0)
 
         lr_scheduler(optimizer_g, init_lr=args.lr * 0.1, iter_num=iter_num, max_iter=max_iter)
-        lr_scheduler(optimizer_f, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
-        lr_scheduler(optimizer_targ, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
+        lr_scheduler(optimizer_src, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
+        lr_scheduler(optimizer_tar, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
+        lr_scheduler(optimizer_targ_adap, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
 
         try:
             inputs_source, labels_source = next(source_loader_iter)
@@ -382,10 +394,12 @@ def train(args, txt_src, txt_tgt):
 
         with torch.no_grad():
             # compute guessed labels of unlabel samples
-            outputs_u = whole_network(inputs_t)
-            outputs_u2 = whole_network(inputs_t2)
+            
+            outputs_u = network_tar(inputs_t)
+            outputs_u2 = network_tar(inputs_t2)
             p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
             pt = p**(1/args.T)
+            #print(pt.shape)
             targets_u = pt / pt.sum(dim=1, keepdim=True)
             targets_u = targets_u.detach()
 
@@ -412,46 +426,69 @@ def train(args, txt_src, txt_tgt):
         # t2 = [t2a, t2b, t2c]
         # => s' = [sa, t1b, t2c]   t1' = [t1a, sb, t1c]   t2' = [t2a, t2b, sc]
 
-        logits = whole_network(mixed_input[0])
-        logits = [logits]
+        feat_out = feature_extractor(mixed_input[0])
+
+        logits_tar = target_classifier(feat_out)
+        logits_src = source_classifier(feat_out)
+        logits_tar = [logits_tar]
+        logits_src = [logits_src]
         for input in mixed_input[1:]:
-            temp = whole_network(input)
-            logits.append(temp)
+            temp_tar = target_classifier(feature_extractor(input))
+            logits_tar.append(temp_tar)
+            temp_src = source_classifier(feature_extractor(input))
+            logits_src.append(temp_src)
 
         # put interleaved samples back
         # [i[:,0] for i in aa]
-        logits = utils.interleave(logits, args.batch_size)
-        logits_x = logits[0]
-        logits_u = torch.cat(logits[1:], dim=0)
+        logits_tar = utils.interleave(logits_tar, args.batch_size)
+        logits_src = utils.interleave(logits_src, args.batch_size)
+        logits_x_tar = logits_tar[0]
+        logits_u_tar = torch.cat(logits_tar[1:], dim=0)
+        logits_x_src = logits_src[0]
+        logits_u_src = torch.cat(logits_src[1:], dim=0)
 
         if(args.label_smooth):
             label_smooth = CrossEntropyLabelSmooth(args.class_num)
-            Lx = label_smooth.forward(logits_x, mixed_target[:args.batch_size])
-            Lu = label_smooth.forward(logits_u, mixed_target[args.batch_size:])
-            w = utils.linear_rampup(iter_num, max_iter, 0.1)
+            Lx_tar = label_smooth.forward(logits_x_tar, mixed_target[:args.batch_size])
+            Lu_tar = label_smooth.forward(logits_u_tar, mixed_target[args.batch_size:])
+            w_tar = utils.linear_rampup(iter_num, max_iter, 0.1)
+            loss_tar = Lx_tar + w_tar * Lu_tar
+
+            Lx_src = label_smooth.forward(logits_x_src, mixed_target[:args.batch_size])
+            Lu_src = label_smooth.forward(logits_u_src, mixed_target[args.batch_size:])
+            w_src = utils.linear_rampup(iter_num, max_iter, 0.1)
+            loss_src = Lx_src + w_src * Lu_src
         else:
             train_criterion = utils.SemiLoss()
-            Lx, Lu, w = train_criterion(logits_x, mixed_target[:args.batch_size], logits_u, mixed_target[args.batch_size:], 
+            Lx_tar, Lu_tar, w_tar = train_criterion(logits_x_tar, mixed_target[:args.batch_size], logits_u_tar, mixed_target[args.batch_size:], 
                 iter_num, max_iter, args.lambda_u)
-        loss = Lx + w * Lu
-        """
-        #Batch Nuclear Norm Maximisation
-        list_svd,_ = torch.sort(torch.sqrt(torch.sum(torch.pow(logits_x,2),dim=0)), descending=True)
-        nums = min(logits_x.shape[0],logits_x.shape[1])
-        L_FBNM = - torch.sum(list_svd[:nums])
-        """
+            loss_tar = Lx_tar + w_tar * Lu_tar
+
+            Lx_src, Lu_src, w_src = train_criterion(logits_x_src, mixed_target[:args.batch_size], logits_u_src, mixed_target[args.batch_size:], 
+                iter_num, max_iter, args.lambda_u)
+            loss_src = Lx_src + w_src * Lu_src
+
+        if(loss_tar.detach().cpu().numpy() > loss_src.detach().cpu().numpy()):
+            loss = loss_tar+loss_src
+        else:
+            loss = loss_tar
+        #loss = loss_tar+loss_src
+
         optimizer_g.zero_grad()
-        optimizer_f.zero_grad()
-        optimizer_targ.zero_grad()
+        optimizer_src.zero_grad()
+        optimizer_tar.zero_grad()
+        optimizer_targ_adap.zero_grad()
         loss.backward()
         optimizer_g.step()
-        optimizer_f.step()
-        optimizer_targ.step()
+        optimizer_src.step()
+        optimizer_tar.step()
+        optimizer_targ_adap.step()
 
         if iter_num % interval_iter == 0 or iter_num == max_iter:
+            whole_network = nn.Sequential(feature_extractor, target_classifier)
             whole_network.eval()
             
-            acc, py, score, y = cal_acc(dset_loaders["test"], whole_network, flag=False)
+            acc, py, score, y = cal_acc(dset_loaders["test"], whole_network.eval(), flag=False)
             mean_ent = torch.mean(Entropy(score))
             
             list_acc.append(acc)
@@ -479,14 +516,15 @@ def train(args, txt_src, txt_tgt):
         args.out_file.write(log_str + '\n')
         args.out_file.flush()  
    
-    return whole_network, py
+    return nn.Sequential(feature_extractor, target_classifier), py
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Boost for Domain Adaptation')
     parser.add_argument('--gpu_id', type=str, nargs='?', default='0', help="device id to run")
     parser.add_argument('--s', type=int, default=0, help="source")
     parser.add_argument('--t', type=int, default=1, help="target")
-    parser.add_argument('--output', type=str, default='san')
+    parser.add_argument('--output', type=str, default='san') 
+    #parser.add_argument('--src_dir', type=str, default='san')
     parser.add_argument('--output_tar', type=str, default='ckps')
     parser.add_argument('--seed', type=int, default=2020, help="random seed")
     parser.add_argument('--max_epoch', type=int, default=50)
@@ -520,7 +558,7 @@ if __name__ == "__main__":
     parser.add_argument('--source_classifier', type=bool, default=True)#Whether or not to include the source classifier
     parser.add_argument('--batch_norm', type=bool, default=True)#Whether or not to use Batch Normalisation before target classifier
     parser.add_argument('--aug_severity', type=int, default=3)#Severity for augmentations
-    parser.add_argument('--blur', type=bool, default=True)#Whether or not to use Guassian blur for augmentations
+    parser.add_argument('--blur', type=bool, default=False)#Whether or not to use Guassian blur for augmentations
 
     args = parser.parse_args()
 
@@ -562,9 +600,12 @@ if __name__ == "__main__":
 
         args.name = names[args.s][0].upper() + names[args.t][0].upper() 
         if args.model == "source": 
-            args.output_dir = osp.join(args.output_tar, args.da, dataset, names[args.s][0].upper())
+            args.output_dir = osp.join(args.output, args.da, dataset, names[args.s][0].upper())
         else:
             args.output_dir = osp.join(args.output_tar, args.da, args.dset, args.name)
+
+        src_dset_name = dataset + "_1.0"
+        args.src_dir = osp.join(args.output, args.da, src_dset_name, names[args.s][0].upper())
 
         args.savename = 'par_' + str(args.cls_par)
         if args.ssl > 0:
@@ -581,7 +622,7 @@ if __name__ == "__main__":
                 os.mkdir(args.mm_dir)
             #args.out_file = open(osp.join(args.mm_dir, "{:}_{:}.txt".format(args.log, args.choice)), "w")
 
-            args.out_file = open(osp.join(args.mm_dir, dataset + '_boost_log_' + args.savename + '.txt'), 'w')
+            args.out_file = open(osp.join(args.mm_dir, dataset + '_boost_invariant_log_' + args.savename + '.txt'), 'w')
 
             args.out_file.write(' '.join(sys.argv))
             utils.print_args(args)
