@@ -22,7 +22,7 @@ python3 image_mixmatch.py --gpu_id 0 --seed 2021 --dset office_0.5 --max_epoch 1
 python3 image_mixmatch.py --gpu_id 0 --seed 2021 --dset office_0.25 --max_epoch 15 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --ps 0.0;
 
 
-python3 image_source.py --gpu_id 0 --seed 2021 --dset OfficeHome_1.0 --max_epoch 100 --s 0 --batch_size=32;
+python3 image_source.py --gpu_id 0 --seed 2021 --dset OfficeHome_1.0 --max_epoch 100 --s 0 --batch_size 32;
 python3 image_target.py --gpu_id 0 --seed 2021 --output ckps\\target\\ --dset OfficeHome_1.0 --s 0 --cls_par 0.3 --ssl 0.6 --batch_size 32;
 python3 image_mixmatch.py --gpu_id 0 --seed 2021 --dset OfficeHome_1.0 --max_epoch 15 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --ps 0.0;
 python3 image_boost.py --gpu_id 0 --seed 2021 --dset OfficeHome_1.0 --max_epoch 15 --s 0 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6 --ps 0.0;
@@ -90,3 +90,5 @@ python3 image_mixmatch.py --gpu_id 0 --seed 2021 --dset OfficeHome_0.5 --max_epo
 python3 image_mixmatch.py --gpu_id 0 --seed 2021 --dset OfficeHome_0.25 --max_epoch 15 --s 3 --output_tar ckps/target/ --cls_par 0.3 --ssl 0.6  --ps 0.0;
 
 python3 image_boost.py --gpu_id 0 --seed 2021 --dset OfficeHome_0.25 --max_epoch 30 --s 3 --output_tar ckps/target/ --ssl 0.6  --ps 0.0 --augratio 2.5  --blur True --aug_severity 3 --batch_norm True --source_classifier False --lr 1e-3 --nolog True
+
+python3 image_source.py --gpu_id 0 --seed 2021 --dset digits --max_epoch 100 --s 0 --batch_size=32;

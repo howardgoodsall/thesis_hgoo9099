@@ -1,0 +1,3 @@
+
+Task: WA, Accuracy = 62.80%
+Task: WD, Accuracy = 99.20%

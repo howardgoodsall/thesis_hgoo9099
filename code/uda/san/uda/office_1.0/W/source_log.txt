@@ -1,0 +1,37 @@
+==========================================
+gpu_id:0
+s:2
+t:1
+max_epoch:100
+batch_size:32
+worker:4
+dset:office_1.0
+lr:0.01
+net:resnet50
+seed:2021
+bottleneck:256
+epsilon:1e-05
+layer:wn
+classifier:bn
+smooth:0.1
+output:san
+da:uda
+digits:-1
+test:False
+class_num:31
+s_dset_path:../data/office_1.0/webcam_list.txt
+test_dset_path:../data/office_1.0/dslr_list.txt
+output_dir_src:san\uda\office_1.0\W
+name_src:W
+out_file:<_io.TextIOWrapper name='san\\uda\\office_1.0\\W\\source_log.txt' mode='w' encoding='cp1252'>
+
+Task: W, Iter:230/2300; Accuracy = 98.75%
+Task: W, Iter:460/2300; Accuracy = 97.50%
+Task: W, Iter:690/2300; Accuracy = 98.75%
+Task: W, Iter:920/2300; Accuracy = 98.75%
+Task: W, Iter:1150/2300; Accuracy = 97.50%
+Task: W, Iter:1380/2300; Accuracy = 98.75%
+Task: W, Iter:1610/2300; Accuracy = 97.50%
+Task: W, Iter:1840/2300; Accuracy = 97.50%
+Task: W, Iter:2070/2300; Accuracy = 98.75%
+Task: W, Iter:2300/2300; Accuracy = 100.00%

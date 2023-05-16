@@ -17,6 +17,8 @@ from loss import CrossEntropyLabelSmooth
 from scipy.spatial.distance import cdist
 from sklearn.metrics import confusion_matrix
 from sklearn.cluster import KMeans
+import mnist
+import svhn
 #from koila import lazy
 
 def op_copy(optimizer):
@@ -59,6 +61,41 @@ def data_load(args):
     dsets = {}
     dset_loaders = {}
     train_bs = args.batch_size
+
+    if(args.digits == 0):
+        train_src = mnist.MNIST_idx('./data/mnist/', 1.0, train=True, download=True,
+                transform=transforms.Compose([
+                    transforms.Resize(32),
+                    transforms.Grayscale(num_output_channels=3),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        test_src = mnist.MNIST_idx('./data/mnist/', 1.0, train=False, download=True,
+                transform=transforms.Compose([
+                    transforms.Resize(32),
+                    transforms.Grayscale(num_output_channels=3),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        test_tar = svhn.SVHN('./data/svhn/', split='test', download=True,
+                transform=transforms.Compose([
+                    transforms.Resize(32),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ])) 
+        
+        dsets["source_tr"] = train_src
+        dset_loaders["source_tr"] = DataLoader(dsets["source_tr"], batch_size=train_bs, shuffle=True, 
+            num_workers=args.worker, drop_last=False)
+        dsets["source_te"] = test_src
+        dset_loaders["source_te"] = DataLoader(dsets["source_te"], batch_size=train_bs*3, shuffle=False, 
+            num_workers=args.worker, drop_last=False)
+        dsets["test"] = test_tar
+        dset_loaders["test"] = DataLoader(dsets["test"], batch_size=train_bs*3, shuffle=False, 
+            num_workers=args.worker, drop_last=False)
+
+        return dset_loaders
+
     txt_src = open(args.s_dset_path).readlines()
     txt_test = open(args.test_dset_path).readlines()
 
@@ -146,6 +183,8 @@ def train_source(args):
     netB.train()
     netC.train()
 
+    iter_source = iter(dset_loaders["source_tr"])
+
     while iter_num < max_iter:
         try:
             inputs_source, labels_source = next(iter_source)
@@ -202,10 +241,7 @@ def train_source(args):
 def test_target(args):
     dset_loaders = data_load(args)
     ## set base network
-    if args.net[0:3] == 'res':
-        netF = network.ResBase(res_name=args.net).cuda()
-    elif args.net[0:3] == 'vgg':
-        netF = network.VGGBase(vgg_name=args.net).cuda()  
+    netF = network.ResBase(res_name=args.net).cuda()
 
     netB = network.feat_bottleneck(type=args.classifier, feature_dim=netF.in_features, bottleneck_dim=args.bottleneck).cuda()
     netC = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()
@@ -220,12 +256,8 @@ def test_target(args):
     netB.eval()
     netC.eval()
 
-    if args.dset=='VISDA-C':
-        acc, acc_list = cal_acc(dset_loaders['test'], netF, netB, netC, True)
-        log_str = '\nTask: {}, Accuracy = {:.2f}%'.format(args.name, acc) + '\n' + acc_list
-    else:
-        acc, _ = cal_acc(dset_loaders['test'], netF, netB, netC, False)
-        log_str = '\nTask: {}, Accuracy = {:.2f}%'.format(args.name, acc)
+    acc, _ = cal_acc(dset_loaders['test'], netF, netB, netC, False)
+    log_str = '\nTask: {}, Accuracy = {:.2f}%'.format(args.name, acc)
 
     args.out_file.write(log_str)
     args.out_file.flush()
@@ -238,14 +270,14 @@ def print_args(args):
     return s
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='SHOT++')
+    parser = argparse.ArgumentParser(description='UDA Boost')
     parser.add_argument('--gpu_id', type=str, nargs='?', default='0', help="device id to run")
     parser.add_argument('--s', type=int, default=0, help="source")
-    parser.add_argument('--t', type=int, default=1, help="target")
+    parser.add_argument('--t', type=int, default=1, help="target")#used for testing
     parser.add_argument('--max_epoch', type=int, default=20, help="max iterations")
     parser.add_argument('--batch_size', type=int, default=64, help="batch_size")
     parser.add_argument('--worker', type=int, default=4, help="number of workers")
-    parser.add_argument('--dset', type=str, default='office')#, choices=['VISDA-C', 'office', 'OfficeHome']
+    parser.add_argument('--dset', type=str, default='office')
     parser.add_argument('--lr', type=float, default=1e-2, help="learning rate")
     parser.add_argument('--net', type=str, default='resnet50', help="vgg16, resnet18, resnet34, resnet50, resnet101")
     parser.add_argument('--seed', type=int, default=2020, help="random seed")
@@ -256,9 +288,18 @@ if __name__ == "__main__":
     parser.add_argument('--smooth', type=float, default=0.1)   
     parser.add_argument('--output', type=str, default='san')
     parser.add_argument('--da', type=str, default='uda', choices=['uda'])
+    parser.add_argument('--digits', type=int, default=-1)
+    parser.add_argument('--test', type=bool, default=False)
     args = parser.parse_args()
 
-    dataset, scale_factor = args.dset.split('_')
+    
+
+    if(args.dset == "digits"):
+        dataset = "digits"
+        scale_factor = 1.0
+        args.digits = args.s
+    else:
+        dataset, scale_factor = args.dset.split('_')
 
 
     if dataset == 'OfficeHome':
@@ -267,10 +308,9 @@ if __name__ == "__main__":
     elif dataset == 'office':
         names = ['amazon', 'dslr', 'webcam']
         args.class_num = 31
-    elif dataset == 'VISDA-C':
-        names = ['train', 'validation']
-        args.class_num = 12
-        args.lr = 1e-3
+    elif dataset == 'digits':
+        names = ['mnist', 'svhn', 'usps']
+        args.class_num = 10
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
     SEED = args.seed
@@ -294,7 +334,8 @@ if __name__ == "__main__":
     args.out_file = open(osp.join(args.output_dir_src, 'source_log.txt'), 'w')
     args.out_file.write(print_args(args)+'\n')
     args.out_file.flush()
-    train_source(args)
+    if(not(args.test)):
+        train_source(args)
 
     args.out_file = open(osp.join(args.output_dir_src, 'source_log_test.txt'), 'w')
     for i in range(len(names)):
@@ -302,9 +343,9 @@ if __name__ == "__main__":
             continue
         args.t = i
         args.name = names[args.s][0].upper() + names[args.t][0].upper()
-
-        args.s_dset_path = folder + args.dset + "/" + names[args.s] + '_list.txt'
-        args.test_dset_path = folder + args.dset + "/" + names[args.t] + '_list.txt'
+        if(args.digits == -1):
+            args.s_dset_path = folder + args.dset + "/" + names[args.s] + '_list.txt'
+            args.test_dset_path = folder + args.dset + "/" + names[args.t] + '_list.txt'
 
         test_target(args)
         

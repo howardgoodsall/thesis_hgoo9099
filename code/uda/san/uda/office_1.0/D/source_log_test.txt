@@ -1,0 +1,3 @@
+
+Task: DA, Accuracy = 60.10%
+Task: DW, Accuracy = 95.72%

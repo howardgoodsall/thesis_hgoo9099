@@ -221,10 +221,7 @@ def train_target_rot(args):
 def train_target(args):
     dset_loaders = data_load(args)
     ## set base network
-    if args.net[0:3] == 'res':
-        netF = network.ResBase(res_name=args.net).cuda()
-    elif args.net[0:3] == 'vgg':
-        netF = network.VGGBase(vgg_name=args.net).cuda()  
+    netF = network.ResBase(res_name=args.net).cuda()
 
     netB = network.feat_bottleneck(type=args.classifier, feature_dim=netF.in_features, bottleneck_dim=args.bottleneck).cuda()
     netC = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()
@@ -423,7 +420,7 @@ def obtain_label(loader, netF, netB, netC, args):
     return predict.astype('int')
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='SHOT++')
+    parser = argparse.ArgumentParser(description='UDA Boost')
     parser.add_argument('--gpu_id', type=str, nargs='?', default='0', help="device id to run")
     parser.add_argument('--s', type=int, default=0, help="source")
     parser.add_argument('--t', type=int, default=1, help="target")
@@ -454,6 +451,7 @@ if __name__ == "__main__":
     parser.add_argument('--da', type=str, default='uda', choices=['uda', 'pda'])
     parser.add_argument('--ssl', type=float, default=0.0) 
     parser.add_argument('--issave', type=bool, default=True)
+    parser.add_argument('--test', type=bool, default=False)
     args = parser.parse_args()
 
     dataset, scale_factor = args.dset.split('_')
@@ -465,10 +463,6 @@ if __name__ == "__main__":
     elif dataset == 'office':
         names = ['amazon', 'dslr', 'webcam']
         args.class_num = 31
-    elif dataset == 'VISDA-C':
-        names = ['train', 'validation']
-        args.class_num = 12
-        args.lr = 1e-3
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
     SEED = args.seed
