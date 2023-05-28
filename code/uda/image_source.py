@@ -19,7 +19,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.cluster import KMeans
 import mnist
 import svhn
-#from koila import lazy
+import usps
 
 def op_copy(optimizer):
     for param_group in optimizer.param_groups:
@@ -61,28 +61,73 @@ def data_load(args):
     dsets = {}
     dset_loaders = {}
     train_bs = args.batch_size
-
-    if(args.digits == 0):
-        train_src = mnist.MNIST_idx('./data/mnist/', 1.0, train=True, download=True,
-                transform=transforms.Compose([
-                    transforms.Resize(32),
-                    transforms.Grayscale(num_output_channels=3),
-                    transforms.ToTensor(),
-                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                ]))
-        test_src = mnist.MNIST_idx('./data/mnist/', 1.0, train=False, download=True,
-                transform=transforms.Compose([
-                    transforms.Resize(32),
-                    transforms.Grayscale(num_output_channels=3),
-                    transforms.ToTensor(),
-                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                ]))
-        test_tar = svhn.SVHN('./data/svhn/', split='test', download=True,
-                transform=transforms.Compose([
-                    transforms.Resize(32),
-                    transforms.ToTensor(),
-                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                ])) 
+    if(args.digits != -1):
+        if(args.digits == 0):
+            train_src = mnist.MNIST('./data/mnist/', 1.0, train=True, download=True,
+                    transform=transforms.Compose([
+                        transforms.Resize(32),
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            test_src = mnist.MNIST('./data/mnist/', 1.0, train=False, download=True,
+                    transform=transforms.Compose([
+                        transforms.Resize(32),
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            test_tar = svhn.SVHN('./data/svhn/', split='test', download=True,
+                    transform=transforms.Compose([
+                        transforms.Resize(32),
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+        elif(args.digits == 1):
+            train_src = svhn.SVHN('./data/svhn/', split='train', download=True,
+                    transform=transforms.Compose([
+                        transforms.Resize(32),
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ])) 
+            test_src = svhn.SVHN('./data/svhn/', split='test', download=True,
+                    transform=transforms.Compose([
+                        transforms.Resize(32),
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ])) 
+            test_tar = mnist.MNIST('./data/mnist/', 1.0, train=False, download=True,
+                    transform=transforms.Compose([
+                        transforms.Resize(32),
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+        elif(args.digits == 2):
+            train_src = usps.USPS('./data/usps/', train=True, download=True,
+                    transform=transforms.Compose([
+                        transforms.Resize(32),
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            test_src = usps.USPS('./data/usps/', train=False, download=True,
+                    transform=transforms.Compose([
+                        transforms.Resize(32),
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ])) 
+            test_tar = mnist.MNIST('./data/mnist/', 1.0, train=False, download=True,
+                    transform=transforms.Compose([
+                        transforms.Resize(32),
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
         
         dsets["source_tr"] = train_src
         dset_loaders["source_tr"] = DataLoader(dsets["source_tr"], batch_size=train_bs, shuffle=True, 
@@ -211,12 +256,9 @@ def train_source(args):
             netF.eval()
             netB.eval()
             netC.eval()
-            if args.dset=='VISDA-C':
-                acc_s_te, acc_list = cal_acc(dset_loaders['source_te'], netF, netB, netC, True)
-                log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%'.format(args.name_src, iter_num, max_iter, acc_s_te) + '\n' + acc_list
-            else:
-                acc_s_te, _ = cal_acc(dset_loaders['source_te'], netF, netB, netC, False)
-                log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%'.format(args.name_src, iter_num, max_iter, acc_s_te)
+        
+            acc_s_te, _ = cal_acc(dset_loaders['source_te'], netF, netB, netC, False)
+            log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%'.format(args.name_src, iter_num, max_iter, acc_s_te)
             args.out_file.write(log_str + '\n')
             args.out_file.flush()
             #print(log_str+'\n')
@@ -238,8 +280,41 @@ def train_source(args):
 
     return netF, netB, netC
 
-def test_target(args):
-    dset_loaders = data_load(args)
+def test_target(args, i=0):
+    print(i)
+    if(args.digits == -1):
+        dset_loaders = data_load(args)
+        test_loader = dset_loaders['test']
+    else:
+        if(i == 0):
+            print("MNIST")
+            test_dset = mnist.MNIST_idx('./data/mnist/', 1.0, train=False, download=True,
+                transform=transforms.Compose([
+                    transforms.Resize(32),
+                    transforms.Grayscale(num_output_channels=3),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        elif(i == 1):
+            print("SVHN")
+            test_dset = svhn.SVHN('./data/svhn/', split='test', download=True,
+                transform=transforms.Compose([
+                    transforms.Resize(32),
+                    transforms.Grayscale(num_output_channels=3),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        elif(i == 2):
+            print("USPS")
+            test_dset = usps.USPS_idx('./data/usps/', train=False, download=True,
+                transform=transforms.Compose([
+                    transforms.Resize(32),
+                    transforms.Grayscale(num_output_channels=3),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ])) 
+        test_loader = DataLoader(test_dset, batch_size=args.batch_size*3, shuffle=False, 
+            num_workers=args.worker, drop_last=False)
     ## set base network
     netF = network.ResBase(res_name=args.net).cuda()
 
@@ -256,7 +331,7 @@ def test_target(args):
     netB.eval()
     netC.eval()
 
-    acc, _ = cal_acc(dset_loaders['test'], netF, netB, netC, False)
+    acc, _ = cal_acc(test_loader, netF, netB, netC, False)
     log_str = '\nTask: {}, Accuracy = {:.2f}%'.format(args.name, acc)
 
     args.out_file.write(log_str)
@@ -275,7 +350,7 @@ if __name__ == "__main__":
     parser.add_argument('--s', type=int, default=0, help="source")
     parser.add_argument('--t', type=int, default=1, help="target")#used for testing
     parser.add_argument('--max_epoch', type=int, default=20, help="max iterations")
-    parser.add_argument('--batch_size', type=int, default=64, help="batch_size")
+    parser.add_argument('--batch_size', type=int, default=32, help="batch_size")
     parser.add_argument('--worker', type=int, default=4, help="number of workers")
     parser.add_argument('--dset', type=str, default='office')
     parser.add_argument('--lr', type=float, default=1e-2, help="learning rate")
@@ -309,6 +384,8 @@ if __name__ == "__main__":
         names = ['amazon', 'dslr', 'webcam']
         args.class_num = 31
     elif dataset == 'digits':
+        #scale_factor = 1.0
+        args.digits = args.s
         names = ['mnist', 'svhn', 'usps']
         args.class_num = 10
 
@@ -321,10 +398,11 @@ if __name__ == "__main__":
     # torch.backends.cudnn.deterministic = True
 
     folder = '../data/'
-    args.s_dset_path = folder + args.dset + "/" + names[args.s] + '_list.txt'
-    args.test_dset_path = folder + args.dset + "/" + names[args.t] + '_list.txt'
+    full_dset = dataset + "_1.0"
+    args.s_dset_path = folder + full_dset + "/" + names[args.s] + '_list.txt'
+    args.test_dset_path = folder + full_dset + "/" + names[args.t] + '_list.txt'
 
-    args.output_dir_src = osp.join(args.output, args.da, args.dset, names[args.s][0].upper())
+    args.output_dir_src = osp.join(args.output, args.da, full_dset, names[args.s][0].upper())
     args.name_src = names[args.s][0].upper()
     if not osp.exists(args.output_dir_src):
         os.system('mkdir -p ' + args.output_dir_src)
@@ -344,9 +422,9 @@ if __name__ == "__main__":
         args.t = i
         args.name = names[args.s][0].upper() + names[args.t][0].upper()
         if(args.digits == -1):
-            args.s_dset_path = folder + args.dset + "/" + names[args.s] + '_list.txt'
-            args.test_dset_path = folder + args.dset + "/" + names[args.t] + '_list.txt'
+            args.s_dset_path = folder + full_dset + "/" + names[args.s] + '_list.txt'
+            args.test_dset_path = folder + full_dset + "/" + names[args.t] + '_list.txt'
 
-        test_target(args)
+        test_target(args, i)
         
     args.out_file.close()

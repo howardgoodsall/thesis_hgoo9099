@@ -1,3 +1,0 @@
-
-Task: AD, Accuracy = 79.92%
-Task: AW, Accuracy = 78.36%

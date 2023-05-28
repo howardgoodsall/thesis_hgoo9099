@@ -23,6 +23,10 @@ from scipy.spatial.distance import cdist
 import network
 from data_list import ImageList, ImageList_twice, ImageListAugment, ImageListAugmentLabelled
 from sklearn.metrics import confusion_matrix
+import mnist
+import svhn
+import usps
+
 
 #from torchsummary import summary
 
@@ -118,7 +122,7 @@ def split_target(args):
                 all_label = torch.cat((all_label, labels.float()), 0)
     top_pred, predict = torch.max(all_output, 1)
     acc = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(all_label.size()[0]) * 100
-    mean_ent = loss.Entropy(nn.Softmax(dim=1)(all_output))#Mean Entropy Calculation
+    mean_ent = loss.Entropy(nn.Softmax(dim=1)(all_output))
 
     log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}'.format(args.name, 0, 0, acc, mean_ent.mean())
     if(not(args.nolog)):
@@ -127,7 +131,7 @@ def split_target(args):
     print(log_str+'\n')     
 
     if args.ps == 0:
-        est_p = (mean_ent<mean_ent.mean()).sum().item() / mean_ent.size(0)
+        est_p = (mean_ent<mean_ent.mean()).sum().item() / mean_ent.size(0)#Mean Entropy Calculation
         log_str = 'Task: {:.2f}'.format(est_p)
         print(log_str + '\n')
         if(not(args.nolog)):
@@ -163,6 +167,7 @@ def split_target(args):
 
         _, idx_ = torch.sort(c_value)
         c_num = len(idx_)
+        PS = 0.5
         c_num_s = int(c_num * PS)
         
         for ei in range(0, c_num_s):
@@ -177,6 +182,208 @@ def split_target(args):
             new_tar.append(line)
 
     return new_src.copy(), new_tar.copy()
+
+def split_target_digits(args):
+    test_transform = torchvision.transforms.Compose([
+        torchvision.transforms.Resize((256, 256)),
+        torchvision.transforms.CenterCrop(224),
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    if(args.digits == 0):
+        train_target = mnist.MNIST('./data/mnist/', args.scale_factor, train=True, download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Lambda(lambda x: x.convert("RGB")),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        train_target2 = mnist.MNIST('./data/mnist/', args.scale_factor, train=True, download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Lambda(lambda x: x.convert("RGB")),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        test_set = mnist.MNIST_idx('./data/mnist/', args.scale_factor, train=False, download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Grayscale(num_output_channels=3),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+    elif(args.digits == 1):
+        train_target = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='train', download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Grayscale(num_output_channels=3),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        train_target2 = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='train', download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Grayscale(num_output_channels=3),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        test_set = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='test', download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Grayscale(num_output_channels=3),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+    elif(args.digits == 2):
+        test_set = usps.USPS_idx('./data/usps/',args.scale_factor , train=False, download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Grayscale(num_output_channels=3),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        
+    dset_loaders = {}
+    #txt_tar = open(args.t_dset_path).readlines()
+    #test_set = ImageList(txt_tar, transform=test_transform)
+
+    dset_loaders["target_te"] = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, 
+        num_workers=args.worker, drop_last=False)
+    dset_loaders["target"] = DataLoader(train_target, batch_size=args.batch_size, shuffle=False, 
+        num_workers=args.worker, drop_last=False)
+    dset_loaders["target2"] = DataLoader(train_target2, batch_size=args.batch_size, shuffle=False, 
+        num_workers=args.worker, drop_last=False)
+
+    netF = network.ResBase(res_name=args.net).cuda()
+    netB = network.feat_bottleneck(type=args.classifier, feature_dim=netF.in_features, bottleneck_dim=args.bottleneck).cuda()
+    netC = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()
+
+    if args.model == "source":
+        modelpath = args.output_dir + "/source_F.pt" 
+        netF.load_state_dict(torch.load(modelpath))
+        modelpath = args.output_dir + "/source_B.pt"   
+        netB.load_state_dict(torch.load(modelpath))
+        modelpath = args.output_dir + "/source_C.pt"    
+        netC.load_state_dict(torch.load(modelpath))
+    else:
+        modelpath = args.output_dir + "/target_F_" + args.savename + ".pt" 
+        netF.load_state_dict(torch.load(modelpath))
+        modelpath = args.output_dir + "/target_B_" + args.savename + ".pt"   
+        netB.load_state_dict(torch.load(modelpath))
+        modelpath = args.output_dir + "/target_C_" + args.savename + ".pt"    
+        netC.load_state_dict(torch.load(modelpath))
+
+    netF.eval()
+    netB.eval()
+    netC.eval()
+
+    start_test = True
+    with torch.no_grad():
+        iter_test = iter(dset_loaders['target_te'])
+        for i in range(len(dset_loaders['target_te'])):
+            data = next(iter_test)
+            # pdb.set_trace()
+            inputs = data[0]
+            labels = data[1]
+            inputs = inputs.cuda()
+            outputs = netC(netB(netF(inputs)))
+            if start_test:
+                all_output = outputs.float().cpu()
+                all_label = labels.float()
+                start_test = False
+            else:
+                all_output = torch.cat((all_output, outputs.float().cpu()), 0)
+                all_label = torch.cat((all_label, labels.float()), 0)
+    top_pred, predict = torch.max(all_output, 1)
+    acc = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(all_label.size()[0]) * 100
+    mean_ent = loss.Entropy(nn.Softmax(dim=1)(all_output))
+    log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}'.format(args.dset + '_test', 0, 0, acc, mean_ent.mean())
+    args.out_file.write(log_str + '\n')
+    args.out_file.flush()
+    print(log_str+'\n') 
+
+
+    start_test = True
+    with torch.no_grad():
+        iter_test = iter(dset_loaders['target'])
+        for i in range(len(dset_loaders['target'])):
+            data = next(iter_test)
+            # pdb.set_trace()
+            inputs = data[0]
+            labels = data[1]
+            inputs = inputs.cuda()
+            outputs = netC(netB(netF(inputs)))
+            if start_test:
+                all_output = outputs.float().cpu()
+                all_label = labels.float()
+                start_test = False
+            else:
+                all_output = torch.cat((all_output, outputs.float().cpu()), 0)
+                all_label = torch.cat((all_label, labels.float()), 0)
+    top_pred, predict = torch.max(all_output, 1)
+    acc = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(all_label.size()[0]) * 100
+    mean_ent = loss.Entropy(nn.Softmax(dim=1)(all_output))
+
+    log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}'.format(args.dset + '_train', 0, 0, acc, mean_ent.mean())
+    args.out_file.write(log_str + '\n')
+    args.out_file.flush()
+    print(log_str+'\n')     
+
+    PS = 0.5
+
+    if args.choice == "ent":
+        value = mean_ent
+    elif args.choice == "maxp":
+        value = - top_pred
+    elif args.choice == "marginp":
+        pred, _ = torch.sort(all_output, 1)
+        value = pred[:,1] - pred[:,0]
+    else:
+        value = torch.rand(len(mean_ent))
+
+    predict = predict.numpy()
+    train_idx = np.zeros(predict.shape)
+
+    cls_k = args.class_num
+    for c in range(cls_k):
+        c_idx = np.where(predict==c)
+        c_idx = c_idx[0]
+        c_value = value[c_idx]
+
+        _, idx_ = torch.sort(c_value)
+        c_num = len(idx_)
+        c_num_s = int(c_num * PS)
+        # print(c, c_num, c_num_s) 
+
+        for ei in range(0, c_num_s):
+            ee = c_idx[idx_[ei]]
+            train_idx[ee] = 1
+
+    train_target.targets = predict
+    new_src = copy.deepcopy(train_target)
+    new_tar = copy.deepcopy(train_target2)
+
+    #pdb.set_trace()
+
+    #if args.digits == 0:
+
+    #    new_src.train_data = np.delete(new_src.train_data, np.where(train_idx==0)[0], axis=0)
+    #    new_src.train_labels = np.delete(new_src.train_labels, np.where(train_idx==0)[0], axis=0)
+
+    #    new_tar.train_data = np.delete(new_tar.train_data, np.where(train_idx==1)[0], axis=0)
+    #    new_tar.train_labels = np.delete(new_tar.train_labels, np.where(train_idx==1)[0], axis=0)
+
+    #else:
+
+    #    new_src.data = np.delete(new_src.data, np.where(train_idx==0)[0], axis=0)
+    #    new_src.targets = np.delete(new_src.targets, np.where(train_idx==0)[0], axis=0)
+
+    #    new_tar.data = np.delete(new_tar.data, np.where(train_idx==1)[0], axis=0)
+    #    new_tar.targets = np.delete(new_tar.targets, np.where(train_idx==1)[0], axis=0)
+
+    #pdb.set_trace()
+
+    return new_src, new_tar
 
 def Entropy(input_):
     bs = input_.size(0)
@@ -216,7 +423,69 @@ def data_load(args, txt_src, txt_tgt):
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
+    if(args.digits == -1):
+        txt_test = open(args.test_dset_path).readlines()
+        dsets["test"] = ImageList(txt_test, transform=test_transform)
+        dsets["source"] = ImageList(txt_src, transform=train_transform)
+        dsets["target"] = ImageList_twice(txt_tgt, transform=[train_transform, train_transform])
+    else:
+        if(args.digits == 0):
+            dsets["target"] = mnist.MNIST('./data/mnist/', args.scale_factor, train=True, download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Lambda(lambda x: x.convert("RGB")),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            train_target2 = mnist.MNIST('./data/mnist/', args.scale_factor, train=True, download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Lambda(lambda x: x.convert("RGB")),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            test_set = mnist.MNIST_idx('./data/mnist/', args.scale_factor, train=False, download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Grayscale(num_output_channels=3),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+        elif(args.digits == 1):
+            train_target = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='train', download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Grayscale(num_output_channels=3),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            train_target2 = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='train', download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Grayscale(num_output_channels=3),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            test_set = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='test', download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Grayscale(num_output_channels=3),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+        elif(args.digits == 2):
+            test_set = usps.USPS_idx('./data/usps/',args.scale_factor , train=False, download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Grayscale(num_output_channels=3),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+        dsets["test"] = ImageList(test_set, transform=test_transform)
+        dsets["source"] = ImageList(txt_src, transform=train_transform)
+        dsets["target"] = ImageList_twice(txt_tgt, transform=[train_transform, train_transform])
     
+    #An experiment to perform augs on labelled data 
     #aug_label_ratio = args.augratio * 0.3
     #aug_unlabel_ratio = args.augratio * 0.7
 
@@ -239,7 +508,6 @@ def data_load(args, txt_src, txt_tgt):
     dsets["test"] = ImageList(txt_test, transform=test_transform)
 
     dset_loaders = {}
-    #if args.model == "source":
     dset_loaders["source"] = torch.utils.data.DataLoader(dsets["source"], batch_size=args.batch_size,
         shuffle=True, num_workers=args.worker, drop_last=True)
     dset_loaders["target"] = torch.utils.data.DataLoader(dsets["target"], batch_size=args.batch_size,
@@ -307,28 +575,34 @@ def train(args, txt_src, txt_tgt):
 
     source_classifier_bn = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=args.bottleneck).cuda()#feature_dim -> in?, bottleneck_dim -> out
     target_classifier_bn = network.feat_bottleneck(type=args.classifier, feature_dim=2048, bottleneck_dim=args.bottleneck).cuda()#feature_dim -> in?, bottleneck_dim -> out
-    netC = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()#bottleneck_dim -> in, class_num -> out
+    netC_1 = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()#bottleneck_dim -> in, class_num -> out
+    netC_2 = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()
 
-    #Base Classifier - partially trained from step 2
+    #Feature extractor - partially trained from step 2
     modelpath = args.output_dir + "/target_F_" + args.savename + ".pt"
     netG.load_state_dict(torch.load(modelpath))
-
-    #Target Classifier - partially trained from step 2
-    modelpath = args.output_dir + "/target_B_" + args.savename + ".pt"
-    target_classifier_bn.load_state_dict(torch.load(modelpath))
 
     #Source Classifier - trained from step 1
     modelpath = args.src_dir + "/source_B.pt"
     source_classifier_bn.load_state_dict(torch.load(modelpath))
-    source_classifier = nn.Sequential(source_classifier_bn, netC)
-    
+    source_classifier = nn.Sequential(source_classifier_bn, netC_1)
+    modelpath = args.src_dir + "/source_C.pt"
+    netC_1.load_state_dict(torch.load(modelpath))
+
+    #Target Classifier - untrained from step 2 (used here just in case we do want to change it)
+    modelpath = args.output_dir + "/target_B_" + args.savename + ".pt"
+    target_classifier_bn.load_state_dict(torch.load(modelpath))
+    modelpath = args.output_dir + "/target_C_" + args.savename + ".pt"    
+    netC_2.load_state_dict(torch.load(modelpath))
+
 
     if len(args.gpu_id.split(',')) > 1:
         netG = nn.DataParallel(netG)
 
     #Target Adapter (previously called target classifier)
-    inner_wn = network.feat_classifier(type='wn', class_num = 2048, bottleneck_dim=netG.in_features).cuda()
-    inner_ln = network.feat_classifier(type='linear', class_num = netG.in_features, bottleneck_dim=2048).cuda()
+    adapt_scale = 2048
+    inner_wn = network.feat_classifier(type='wn', class_num = adapt_scale, bottleneck_dim=netG.in_features).cuda()
+    inner_ln = network.feat_classifier(type='linear', class_num = netG.in_features, bottleneck_dim=adapt_scale).cuda()
     targ_params = [{'params':inner_wn.parameters()}, {'params':inner_ln.parameters()}]
 
     if(args.batch_norm):
@@ -338,40 +612,35 @@ def train(args, txt_src, txt_tgt):
         target_adapter = nn.Sequential(network.ResidualBlock([inner_wn, inner_ln]))
     
     
-    final_fc = network.feat_classifier(type='linear', class_num = 256, bottleneck_dim=args.bottleneck).cuda()
-    res_classifier = utils.ResClassifier(args.class_num, 256).cuda()
-    #target_classifier = nn.Sequential(target_classifier_bn, final_fc, res_classifier)
-    target_classifier = nn.Sequential(target_classifier_bn, netC)
+    target_classifier = nn.Sequential(target_classifier_bn, netC_2)
     
-    
-    optimizer_g = optim.SGD(netG.parameters(), lr = args.lr * 0.1)#Optimisers set here
+    feature_extractor_lr = 0
+    optimizer_g = optim.SGD(netG.parameters(), lr = feature_extractor_lr)#Optimisers set here
     optimizer_targ_adap = optim.SGD(targ_params, lr = args.lr)
-    optimizer_src = optim.SGD(source_classifier.parameters(), lr = args.lr)
     optimizer_tar = optim.SGD(target_classifier.parameters(), lr = args.lr)
 
-    #G->base
-    #target adapter->ResNet block
+    #G -> base
+    #target adapter -> ResNet block
     #source classifier -> classifier trained in step 1
-    #target classifier -> classifier trained in step 2
-    feature_extractor = nn.Sequential(netG, target_adapter)#This combines the base network and the added layers
+    #target classifier -> the same but also trained in this step
+    feature_extractor = netG
     source_loader_iter = iter(dset_loaders["source"])#Labelled
     target_loader_iter = iter(dset_loaders["target"])#Unlabelled
 
     list_acc = []
     best_ent = 100
 
+    src_class_use_freq = 0
+
     for iter_num in range(1, max_iter + 1):
         feature_extractor.train()
+        target_adapter.train()
         target_classifier.train()
-        source_classifier.train()
+        source_classifier.eval()
         network_tar = nn.Sequential(feature_extractor, target_classifier)
-        network_tar.train()
 
         #summary(whole_network, input_size=(3, 256, 256))
-        #sys.exit(0)
 
-        lr_scheduler(optimizer_g, init_lr=args.lr * 0.1, iter_num=iter_num, max_iter=max_iter)
-        lr_scheduler(optimizer_src, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
         lr_scheduler(optimizer_tar, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
         lr_scheduler(optimizer_targ_adap, init_lr=args.lr, iter_num=iter_num, max_iter=max_iter)
 
@@ -399,7 +668,6 @@ def train(args, txt_src, txt_tgt):
             outputs_u2 = network_tar(inputs_t2)
             p = (torch.softmax(outputs_u, dim=1) + torch.softmax(outputs_u2, dim=1)) / 2
             pt = p**(1/args.T)
-            #print(pt.shape)
             targets_u = pt / pt.sum(dim=1, keepdim=True)
             targets_u = targets_u.detach()
 
@@ -428,12 +696,19 @@ def train(args, txt_src, txt_tgt):
 
         feat_out = feature_extractor(mixed_input[0])
 
-        logits_tar = target_classifier(feat_out)
+        if(args.targ_adapter):
+            adapt_out = target_adapter(feat_out)
+            logits_tar = target_classifier(adapt_out)
+        else:
+            logits_tar = target_classifier(feat_out)
         logits_src = source_classifier(feat_out)
         logits_tar = [logits_tar]
         logits_src = [logits_src]
         for input in mixed_input[1:]:
-            temp_tar = target_classifier(feature_extractor(input))
+            if(args.targ_adapter):
+                temp_tar = target_classifier(target_adapter(feature_extractor(input)))
+            else:
+                temp_tar = target_classifier(feature_extractor(input))
             logits_tar.append(temp_tar)
             temp_src = source_classifier(feature_extractor(input))
             logits_src.append(temp_src)
@@ -448,7 +723,8 @@ def train(args, txt_src, txt_tgt):
         logits_u_src = torch.cat(logits_src[1:], dim=0)
 
         if(args.label_smooth):
-            label_smooth = CrossEntropyLabelSmooth(args.class_num)
+            args.smooth = args.smooth
+            label_smooth = CrossEntropyLabelSmooth(args.class_num, epsilon=args.smooth)
             Lx_tar = label_smooth.forward(logits_x_tar, mixed_target[:args.batch_size])
             Lu_tar = label_smooth.forward(logits_u_tar, mixed_target[args.batch_size:])
             w_tar = utils.linear_rampup(iter_num, max_iter, 0.1)
@@ -468,24 +744,34 @@ def train(args, txt_src, txt_tgt):
                 iter_num, max_iter, args.lambda_u)
             loss_src = Lx_src + w_src * Lu_src
 
-        if(loss_tar.detach().cpu().numpy() > loss_src.detach().cpu().numpy()):
-            loss = loss_tar+loss_src
+        #Loss optimising function
+        if((loss_tar.detach().cpu().numpy() > loss_src.detach().cpu().numpy()) and args.invariant_opt):
+            loss = loss_tar# + (loss_src)#*(1-utils.linear_rampup(iter_num, max_iter))
+            feature_extractor_lr = args.lr*0.1*(1/args.batch_size)*(1-utils.linear_rampup(iter_num, max_iter))
+            src_class_use_freq += 1
         else:
             loss = loss_tar
-        #loss = loss_tar+loss_src
+            feature_extractor_lr = 0
+
+        lr_scheduler(optimizer_g, init_lr=feature_extractor_lr, iter_num=iter_num, max_iter=max_iter)
 
         optimizer_g.zero_grad()
-        optimizer_src.zero_grad()
+        #optimizer_src.zero_grad()
         optimizer_tar.zero_grad()
         optimizer_targ_adap.zero_grad()
         loss.backward()
         optimizer_g.step()
-        optimizer_src.step()
+        #optimizer_src.step()
         optimizer_tar.step()
         optimizer_targ_adap.step()
+        
+
 
         if iter_num % interval_iter == 0 or iter_num == max_iter:
-            whole_network = nn.Sequential(feature_extractor, target_classifier)
+            if(args.targ_adapter):
+                whole_network = nn.Sequential(feature_extractor, target_adapter, target_classifier)
+            else:
+                whole_network = nn.Sequential(feature_extractor, target_classifier)
             whole_network.eval()
             
             acc, py, score, y = cal_acc(dset_loaders["test"], whole_network.eval(), flag=False)
@@ -500,11 +786,13 @@ def train(args, txt_src, txt_tgt):
                 best_py = py
                 best_score = score
 
-            log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}'.format(args.name, iter_num, max_iter, acc, mean_ent)
+            log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}\n'.format(args.name, iter_num, max_iter, acc, mean_ent)
+            log_str += "Frequency of src_loss < targ_loss: {}\n".format(src_class_use_freq)
             if(not(args.nolog)):
                 args.out_file.write(log_str + '\n')
                 args.out_file.flush()
-            print(log_str+'\n')            
+            print(log_str+'\n')
+            src_class_use_freq = 0         
 
     idx = np.argmax(np.array(list_acc))
     max_acc = list_acc[idx]
@@ -524,17 +812,17 @@ if __name__ == "__main__":
     parser.add_argument('--s', type=int, default=0, help="source")
     parser.add_argument('--t', type=int, default=1, help="target")
     parser.add_argument('--output', type=str, default='san') 
-    #parser.add_argument('--src_dir', type=str, default='san')
     parser.add_argument('--output_tar', type=str, default='ckps')
     parser.add_argument('--seed', type=int, default=2020, help="random seed")
-    parser.add_argument('--max_epoch', type=int, default=50)
+    parser.add_argument('--max_epoch', type=int, default=3)
     parser.add_argument('--batch_size', type=int, default=5, help="batch_size")
     parser.add_argument('--worker', type=int, default=4, help="number of workers")
     parser.add_argument('--bottleneck_dim', type=int, default=256)
 
     parser.add_argument('--net', type=str, default='resnet50', choices=["resnet18", "resnet50", "resnet101", "resnet34", "vgg16"])
-    parser.add_argument('--dset', type=str, default='office-home', help="The dataset or source dataset used")#choices=['office', 'office-home']
+    parser.add_argument('--dset', type=str, default='office_1.0', help="The dataset or source dataset used")
     parser.add_argument('--lr', type=float, default=1e-2, help="learning rate")
+    parser.add_argument('--smooth', type=float, default=0.4)   
 
 
     parser.add_argument('--alpha', default=0.75, type=float)
@@ -544,7 +832,7 @@ if __name__ == "__main__":
     parser.add_argument('--cls_par', type=float, default=0.3)
     parser.add_argument('--threshold', type=int, default=0)
     parser.add_argument('--ssl', type=float, default=0.0) 
-    parser.add_argument('--ps', type=float, default=0.0)
+    parser.add_argument('--ps', type=float, default=0.5)
     parser.add_argument('--choice', type=str, default="ent", choices=["maxp", "ent", "marginp", "random"])
     parser.add_argument('--layer', type=str, default="wn", choices=["linear", "wn"])
     parser.add_argument('--classifier', type=str, default="bn", choices=["ori", "bn"])
@@ -553,12 +841,14 @@ if __name__ == "__main__":
     parser.add_argument('--model', type=str, default="target", choices=["source", 'target'])
     parser.add_argument('--issave', type=bool, default=False)
     parser.add_argument('--nolog', type=bool, default=False)#don't write to log file if True
-    parser.add_argument('--augratio', type=float, default=0.0)#Ratio of original data to augmented data
+    parser.add_argument('--augratio', type=float, default=0.5)#Ratio of original data to augmented data
     parser.add_argument('--label_smooth', type=bool, default=True)#Whether or not to use label smoothing
-    parser.add_argument('--source_classifier', type=bool, default=True)#Whether or not to include the source classifier
     parser.add_argument('--batch_norm', type=bool, default=True)#Whether or not to use Batch Normalisation before target classifier
     parser.add_argument('--aug_severity', type=int, default=3)#Severity for augmentations
     parser.add_argument('--blur', type=bool, default=False)#Whether or not to use Guassian blur for augmentations
+    parser.add_argument('--invariant_opt', type=bool, default=True)#Whether or not to use Guassian blur for augmentations
+    parser.add_argument('--targ_adapter', type=bool, default=True)
+    parser.add_argument('--digits', type=int, default=-1)
 
     args = parser.parse_args()
 
@@ -576,6 +866,10 @@ if __name__ == "__main__":
     elif dataset == 'office':
         names = ['amazon', 'dslr', 'webcam']
         args.class_num = 31
+    elif dataset == 'digits':
+        args.digits = args.s
+        names = ['mnist', 'svhn', 'usps']
+        args.class_num = 10
 
 
     if args.net == 'resnet101':
@@ -594,6 +888,9 @@ if __name__ == "__main__":
         if i == args.s:
             continue
         args.t = i
+
+        if(args.digits != -1):
+            args.digits = i
 
         args.t_dset_path = folder + args.dset + '/' + names[args.t] + '_train_list.txt'
         args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_test_list.txt'
@@ -626,6 +923,10 @@ if __name__ == "__main__":
 
             args.out_file.write(' '.join(sys.argv))
             utils.print_args(args)
+        if(args.digits == -1):
+            txt_src, txt_tgt = split_target(args)
+        else:
+            txt_src, txt_tgt = split_target_digits(args)
         txt_src, txt_tgt = split_target(args)
         train(args, txt_src, txt_tgt)
 

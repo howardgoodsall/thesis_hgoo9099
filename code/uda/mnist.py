@@ -61,11 +61,13 @@ class MNIST(vision.VisionDataset):
         warnings.warn("test_data has been renamed data")
         return self.data
 
-    def __init__(self, root, train=True, transform=None, target_transform=None,
+    def __init__(self, root, scale_factor, train=True, transform=None, target_transform=None,
                  download=False):
         super(MNIST, self).__init__(root, transform=transform,
                                     target_transform=target_transform)
         self.train = train  # training set or test set
+        self.scale_factor = scale_factor
+        
 
         if download:
             self.download()
@@ -79,6 +81,7 @@ class MNIST(vision.VisionDataset):
         else:
             data_file = self.test_file
         self.data, self.targets = torch.load(os.path.join(self.processed_folder, data_file))
+        print("MNIST size: " + str(int(len(self.data)*self.scale_factor)))
 
     def __getitem__(self, index):
         """
@@ -88,6 +91,8 @@ class MNIST(vision.VisionDataset):
         Returns:
             tuple: (image, target) where target is index of the target class.
         """
+        if(index > int(len(self.data)*self.scale_factor)):
+            index = int(len(self.data)*self.scale_factor) % index
         img, target = self.data[index], int(self.targets[index])
 
         # doing this so that it is consistent with all other datasets
@@ -103,7 +108,7 @@ class MNIST(vision.VisionDataset):
         return img, target
 
     def __len__(self):
-        return len(self.data)
+        return int(len(self.data)*self.scale_factor)
 
     # @property
     # def raw_folder(self):
@@ -120,7 +125,7 @@ class MNIST(vision.VisionDataset):
     @property
     def processed_folder(self):
         return os.path.join(self.root, 'processed')
-        
+
     @property
     def class_to_idx(self):
         return {_class: i for i, _class in enumerate(self.classes)}
@@ -261,7 +266,7 @@ class MNIST_idx(vision.VisionDataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target
+        return img, target, index
 
     def __len__(self):
         return int(len(self.data)*self.scale_factor)

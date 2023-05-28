@@ -23,6 +23,9 @@ from scipy.spatial.distance import cdist
 import network
 from data_list import ImageList, ImageList_twice
 from sklearn.metrics import confusion_matrix
+import mnist
+import svhn
+import usps
 
 def split_target(args):
     test_transform = torchvision.transforms.Compose([
@@ -31,11 +34,10 @@ def split_target(args):
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-
-    txt_tar = open(args.t_dset_path).readlines()
     dset_loaders = {}
-
+    txt_tar = open(args.t_dset_path).readlines()
     test_set = ImageList(txt_tar, transform=test_transform)
+
     dset_loaders["target"] = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size*3,
         shuffle=False, num_workers=args.worker, drop_last=False)
 
@@ -81,17 +83,6 @@ def split_target(args):
     top_pred, predict = torch.max(all_output, 1)
     acc = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(all_label.size()[0]) * 100
     mean_ent = loss.Entropy(nn.Softmax(dim=1)(all_output))
-
-    if args.dset == 'VISDA-C':
-        matrix = confusion_matrix(all_label, torch.squeeze(predict).float())
-        matrix = matrix[np.unique(all_label).astype(int),:]
-        all_acc = matrix.diagonal()/matrix.sum(axis=1) * 100
-        acc = all_acc.mean()
-        aa = [str(np.round(i, 2)) for i in all_acc]
-        acc_list = ' '.join(aa)
-        print(acc_list)
-        args.out_file.write(acc_list + '\n')
-        args.out_file.flush()
 
     log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}'.format(args.name, 0, 0, acc, mean_ent.mean())
     args.out_file.write(log_str + '\n')
@@ -147,6 +138,216 @@ def split_target(args):
 
     return new_src.copy(), new_tar.copy()
 
+def split_target_digits(args):
+    test_transform = torchvision.transforms.Compose([
+        torchvision.transforms.Resize((256, 256)),
+        torchvision.transforms.CenterCrop(224),
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    if(args.digits == 0):
+        train_target = mnist.MNIST('./data/mnist/', args.scale_factor, train=True, download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Lambda(lambda x: x.convert("RGB")),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        train_target2 = mnist.MNIST('./data/mnist/', args.scale_factor, train=True, download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Lambda(lambda x: x.convert("RGB")),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        test_set = mnist.MNIST_idx('./data/mnist/', args.scale_factor, train=False, download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Grayscale(num_output_channels=3),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+    elif(args.digits == 1):
+        train_target = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='train', download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Grayscale(num_output_channels=3),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        train_target2 = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='train', download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Grayscale(num_output_channels=3),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        test_set = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='test', download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Grayscale(num_output_channels=3),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+    elif(args.digits == 2):
+        test_set = usps.USPS_idx('./data/usps/',args.scale_factor , train=False, download=True,
+                transform=torchvision.transforms.Compose([
+                    torchvision.transforms.Resize(32),
+                    torchvision.transforms.Grayscale(num_output_channels=3),
+                    torchvision.transforms.ToTensor(),
+                    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]))
+        
+    dset_loaders = {}
+    #txt_tar = open(args.t_dset_path).readlines()
+    #test_set = ImageList(txt_tar, transform=test_transform)
+
+    dset_loaders["target_te"] = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, 
+        num_workers=args.worker, drop_last=False)
+    dset_loaders["target"] = DataLoader(train_target, batch_size=args.batch_size, shuffle=False, 
+        num_workers=args.worker, drop_last=False)
+    dset_loaders["target2"] = DataLoader(train_target2, batch_size=args.batch_size, shuffle=False, 
+        num_workers=args.worker, drop_last=False)
+
+    netF = network.ResBase(res_name=args.net).cuda()
+    netB = network.feat_bottleneck(type=args.classifier, feature_dim=netF.in_features, bottleneck_dim=args.bottleneck).cuda()
+    netC = network.feat_classifier(type=args.layer, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()
+
+    if args.model == "source":
+        modelpath = args.output_dir + "/source_F.pt" 
+        netF.load_state_dict(torch.load(modelpath))
+        modelpath = args.output_dir + "/source_B.pt"   
+        netB.load_state_dict(torch.load(modelpath))
+        modelpath = args.output_dir + "/source_C.pt"    
+        netC.load_state_dict(torch.load(modelpath))
+    else:
+        modelpath = args.output_dir + "/target_F_" + args.savename + ".pt" 
+        netF.load_state_dict(torch.load(modelpath))
+        modelpath = args.output_dir + "/target_B_" + args.savename + ".pt"   
+        netB.load_state_dict(torch.load(modelpath))
+        modelpath = args.output_dir + "/target_C_" + args.savename + ".pt"    
+        netC.load_state_dict(torch.load(modelpath))
+
+    netF.eval()
+    netB.eval()
+    netC.eval()
+
+    start_test = True
+    with torch.no_grad():
+        iter_test = iter(dset_loaders['target_te'])
+        for i in range(len(dset_loaders['target_te'])):
+            data = next(iter_test)
+            # pdb.set_trace()
+            inputs = data[0]
+            labels = data[1]
+            inputs = inputs.cuda()
+            outputs = netC(netB(netF(inputs)))
+            if start_test:
+                all_output = outputs.float().cpu()
+                all_label = labels.float()
+                start_test = False
+            else:
+                all_output = torch.cat((all_output, outputs.float().cpu()), 0)
+                all_label = torch.cat((all_label, labels.float()), 0)
+    top_pred, predict = torch.max(all_output, 1)
+    acc = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(all_label.size()[0]) * 100
+    mean_ent = loss.Entropy(nn.Softmax(dim=1)(all_output))
+    log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}'.format(args.dset + '_test', 0, 0, acc, mean_ent.mean())
+    args.out_file.write(log_str + '\n')
+    args.out_file.flush()
+    print(log_str+'\n') 
+
+
+    start_test = True
+    with torch.no_grad():
+        iter_test = iter(dset_loaders['target'])
+        for i in range(len(dset_loaders['target'])):
+            data = next(iter_test)
+            # pdb.set_trace()
+            inputs = data[0]
+            labels = data[1]
+            inputs = inputs.cuda()
+            outputs = netC(netB(netF(inputs)))
+            if start_test:
+                all_output = outputs.float().cpu()
+                all_label = labels.float()
+                start_test = False
+            else:
+                all_output = torch.cat((all_output, outputs.float().cpu()), 0)
+                all_label = torch.cat((all_label, labels.float()), 0)
+    top_pred, predict = torch.max(all_output, 1)
+    acc = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(all_label.size()[0]) * 100
+    mean_ent = loss.Entropy(nn.Softmax(dim=1)(all_output))
+
+    log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%; Mean Ent = {:.4f}'.format(args.dset + '_train', 0, 0, acc, mean_ent.mean())
+    args.out_file.write(log_str + '\n')
+    args.out_file.flush()
+    print(log_str+'\n')     
+
+    if args.ps == 0:
+        est_p = (mean_ent<mean_ent.mean()).sum().item() / mean_ent.size(0)
+        log_str = 'Task: {:.2f}'.format(est_p)
+        print(log_str + '\n')
+        args.out_file.write(log_str + '\n')
+        args.out_file.flush()
+        PS = est_p
+    else:
+        PS = args.ps
+
+    if args.choice == "ent":
+        value = mean_ent
+    elif args.choice == "maxp":
+        value = - top_pred
+    elif args.choice == "marginp":
+        pred, _ = torch.sort(all_output, 1)
+        value = pred[:,1] - pred[:,0]
+    else:
+        value = torch.rand(len(mean_ent))
+
+    predict = predict.numpy()
+    train_idx = np.zeros(predict.shape)
+
+    cls_k = args.class_num
+    for c in range(cls_k):
+        c_idx = np.where(predict==c)
+        c_idx = c_idx[0]
+        c_value = value[c_idx]
+
+        _, idx_ = torch.sort(c_value)
+        c_num = len(idx_)
+        c_num_s = int(c_num * PS)
+        # print(c, c_num, c_num_s) 
+
+        for ei in range(0, c_num_s):
+            ee = c_idx[idx_[ei]]
+            train_idx[ee] = 1
+
+    train_target.targets = predict
+    new_src = copy.deepcopy(train_target)
+    new_tar = copy.deepcopy(train_target2)
+
+    #pdb.set_trace()
+
+    #if args.digits == 0:
+
+    #    new_src.train_data = np.delete(new_src.train_data, np.where(train_idx==0)[0], axis=0)
+    #    new_src.train_labels = np.delete(new_src.train_labels, np.where(train_idx==0)[0], axis=0)
+
+    #    new_tar.train_data = np.delete(new_tar.train_data, np.where(train_idx==1)[0], axis=0)
+    #    new_tar.train_labels = np.delete(new_tar.train_labels, np.where(train_idx==1)[0], axis=0)
+
+    #else:
+
+    #    new_src.data = np.delete(new_src.data, np.where(train_idx==0)[0], axis=0)
+    #    new_src.targets = np.delete(new_src.targets, np.where(train_idx==0)[0], axis=0)
+
+    #    new_tar.data = np.delete(new_tar.data, np.where(train_idx==1)[0], axis=0)
+    #    new_tar.targets = np.delete(new_tar.targets, np.where(train_idx==1)[0], axis=0)
+
+    #pdb.set_trace()
+
+    return new_src, new_tar
+
 def Entropy(input_):
     bs = input_.size(0)
     entropy = -input_ * torch.log(input_ + 1e-5)
@@ -169,11 +370,67 @@ def data_load(args, txt_src, txt_tgt):
     ])
 
     dsets = {}
-    dsets["source"] = ImageList(txt_src, transform=train_transform)
-    dsets["target"] = ImageList_twice(txt_tgt, transform=[train_transform, train_transform])
-
-    txt_test = open(args.test_dset_path).readlines()
-    dsets["test"] = ImageList(txt_test, transform=test_transform)
+    if(args.digits == -1):
+        txt_test = open(args.test_dset_path).readlines()
+        dsets["test"] = ImageList(txt_test, transform=test_transform)
+        dsets["source"] = ImageList(txt_src, transform=train_transform)
+        dsets["target"] = ImageList_twice(txt_tgt, transform=[train_transform, train_transform])
+    else:
+        if(args.digits == 0):
+            dsets["target"] = mnist.MNIST('./data/mnist/', args.scale_factor, train=True, download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Lambda(lambda x: x.convert("RGB")),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            train_target2 = mnist.MNIST('./data/mnist/', args.scale_factor, train=True, download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Lambda(lambda x: x.convert("RGB")),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            test_set = mnist.MNIST_idx('./data/mnist/', args.scale_factor, train=False, download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Grayscale(num_output_channels=3),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+        elif(args.digits == 1):
+            train_target = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='train', download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Grayscale(num_output_channels=3),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            train_target2 = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='train', download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Grayscale(num_output_channels=3),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+            test_set = svhn.SVHN_idx('./data/svhn/', args.scale_factor, split='test', download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Grayscale(num_output_channels=3),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+        elif(args.digits == 2):
+            test_set = usps.USPS_idx('./data/usps/',args.scale_factor , train=False, download=True,
+                    transform=torchvision.transforms.Compose([
+                        torchvision.transforms.Resize(32),
+                        torchvision.transforms.Grayscale(num_output_channels=3),
+                        torchvision.transforms.ToTensor(),
+                        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                    ]))
+        dsets["test"] = ImageList(test_set, transform=test_transform)
+        dsets["source"] = ImageList(txt_src, transform=train_transform)
+        dsets["target"] = ImageList_twice(txt_tgt, transform=[train_transform, train_transform])
 
     dset_loaders = {}
     dset_loaders["source"] = torch.utils.data.DataLoader(dsets["source"], batch_size=args.batch_size,
@@ -228,6 +485,9 @@ def cal_acc(loader, model, flag=True):
 
 def train(args, txt_src, txt_tgt):
     ## set pre-process
+    print(type(txt_src))
+    print(len(txt_src))
+    print(txt_src)
     dset_loaders = data_load(args, txt_src, txt_tgt)
     ## set base network
     if args.net[0:3] == 'res':
@@ -347,21 +607,9 @@ def train(args, txt_src, txt_tgt):
 
         if iter_num % interval_iter == 0 or iter_num == max_iter:
             base_network.eval()
-            if args.dset == 'VISDA-C':
-                acc, py, score, y, tacc = cal_acc(dset_loaders["test"], base_network, flag=True)
-                print(tacc)
-                args.out_file.write(tacc + '\n')
-                args.out_file.flush()
-                _ent = Entropy(score)
-                mean_ent = 0
-                for ci in range(args.class_num):
-                    if _ent[py==ci].size(0) > 0:
-                        mean_ent += _ent[py==ci].mean()
-                mean_ent /= args.class_num
-            else:
-                acc, py, score, y = cal_acc(dset_loaders["test"], base_network, flag=False)
-                mean_ent = torch.mean(Entropy(score))
-            
+            acc, py, score, y = cal_acc(dset_loaders["test"], base_network, flag=False)
+            mean_ent = torch.mean(Entropy(score))
+        
             list_acc.append(acc)
 
             if best_ent > mean_ent:
@@ -420,6 +668,9 @@ if __name__ == "__main__":
     parser.add_argument('--gent', type=bool, default=True)
     parser.add_argument('--model', type=str, default="target", choices=["source", 'target'])
     parser.add_argument('--issave', type=bool, default=False)
+    parser.add_argument('--scale_factor', type=float, default=1.0)
+    parser.add_argument('--digits', type=int, default=-1)
+
 
     args = parser.parse_args()
 
@@ -432,10 +683,10 @@ if __name__ == "__main__":
     elif dataset == 'office':
         names = ['amazon', 'dslr', 'webcam']
         args.class_num = 31
-    elif dataset == 'VISDA-C':
-        names = ['train', 'validation']
-        args.class_num = 12
-        args.lr = 1e-3
+    elif dataset == 'digits':
+        args.digits = args.s
+        names = ['mnist', 'svhn', 'usps']
+        args.class_num = 10
 
 
     if args.net == 'resnet101':
@@ -454,6 +705,8 @@ if __name__ == "__main__":
         if i == args.s:
             continue
         args.t = i
+        if(args.digits != -1):
+            args.digits = i
 
         args.t_dset_path = folder + args.dset + '/' + names[args.t] + '_train_list.txt'
         args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_test_list.txt'
@@ -483,7 +736,10 @@ if __name__ == "__main__":
 
         args.out_file.write(' '.join(sys.argv))
         utils.print_args(args)
-        txt_src, txt_tgt = split_target(args)
+        if(args.digits == -1):
+            txt_src, txt_tgt = split_target(args)
+        else:
+            txt_src, txt_tgt = split_target_digits(args)
         train(args, txt_src, txt_tgt)
 
         args.out_file.close()

@@ -42,14 +42,15 @@ class SVHN(vision.VisionDataset):
         'extra': ["http://ufldl.stanford.edu/housenumbers/extra_32x32.mat",
                   "extra_32x32.mat", "a93ce644f1a588dc4d68dda5feec44a7"]}
 
-    def __init__(self, root, split='train', transform=None, target_transform=None,
+    def __init__(self, root, scale_factor=1.0, split='train', transform=None, target_transform=None,
                  download=False):
         super(SVHN, self).__init__(root, transform=transform,
                                    target_transform=target_transform)
-        self.split = utils.verify_str_arg(split, "split", tuple(self.split_list.keys()))
+        self.split = utils.verify_str_arg(split, "split", list(self.split_list.keys()))
         self.url = self.split_list[split][0]
         self.filename = self.split_list[split][1]
         self.file_md5 = self.split_list[split][2]
+        self.scale_factor = scale_factor
 
         if download:
             self.download()
@@ -77,6 +78,9 @@ class SVHN(vision.VisionDataset):
         # which expect the class labels to be in the range [0, C-1]
         np.place(self.labels, self.labels == 10, 0)
         self.data = np.transpose(self.data, (3, 2, 0, 1))
+        self.data_len = int(len(self.data)*float(self.scale_factor))
+        self.data = self.data[:self.data_len]
+        print("SVHN size: " + str(self.data_len))
 
     def __getitem__(self, index):
         """
@@ -149,7 +153,7 @@ class SVHN_idx(vision.VisionDataset):
         'extra': ["http://ufldl.stanford.edu/housenumbers/extra_32x32.mat",
                   "extra_32x32.mat", "a93ce644f1a588dc4d68dda5feec44a7"]}
 
-    def __init__(self, root, split='train', transform=None, target_transform=None,
+    def __init__(self, root, scale_factor=1.0, split='train', transform=None, target_transform=None,
                  download=False):
         super(SVHN_idx, self).__init__(root, transform=transform,
                                    target_transform=target_transform)
@@ -157,6 +161,7 @@ class SVHN_idx(vision.VisionDataset):
         self.url = self.split_list[split][0]
         self.filename = self.split_list[split][1]
         self.file_md5 = self.split_list[split][2]
+        self.scale_factor = scale_factor
 
         if download:
             self.download()
@@ -184,6 +189,9 @@ class SVHN_idx(vision.VisionDataset):
         # which expect the class labels to be in the range [0, C-1]
         np.place(self.labels, self.labels == 10, 0)
         self.data = np.transpose(self.data, (3, 2, 0, 1))
+        self.data_len = int(len(self.data)*float(self.scale_factor))
+        self.data = self.data[:self.data_len]
+        print("SVHN size: " + str(self.data_len))
 
     def __getitem__(self, index):
         """
@@ -205,7 +213,7 @@ class SVHN_idx(vision.VisionDataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target
+        return img, target, index
 
     def __len__(self):
         return len(self.data)
